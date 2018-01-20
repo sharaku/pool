@@ -52,6 +52,10 @@ SOFTWARE.
 #define	WQ_DEFAULT_TIMEO_MS	(10000)
 #define	WQ_CTX_MAGIC	('W' << 8 | 'Q')
 
+
+static void _wq_worker(void *arg);
+
+
 // スケジュールで順番が来たitemを処理する。
 // 処理対象がなければ1を応答する。
 static inline void
@@ -347,7 +351,7 @@ wq_sched(wq_item_t *item, wq_stage_t cb, wq_arg_t arg)
 }
 
 void
-wq_timer_sched(wq_item_t *item, wq_msec_t ms, wq_stage_t cb, wq_arg_t * arg)
+wq_timer_sched(wq_item_t *item, wq_msec_t ms, wq_stage_t cb, wq_arg_t *arg)
 {
 	// Jobの初期化
 	item->stat	= WQ_STAT_WAIT;

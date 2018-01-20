@@ -181,7 +181,7 @@ wq_init_item_prio(wq_item_t *item, wq_ctx_t *ctx, int16_t prio)
 }
 //extern void wq_set_prio(wq_item_t *item, int16_t prio);
 extern void wq_sched(wq_item_t *item, wq_stage_t cb, wq_arg_t arg);
-//extern void wq_timer_sched(wq_item_t *, wq_msec_t, wq_stage_t, wq_arg_t *);
+extern void wq_timer_sched(wq_item_t *item, wq_msec_t ms, wq_stage_t cb, wq_arg_t *arg);
 //extern void wq_cancel(wq_item_t *);
 
 CPP_SRC(})
