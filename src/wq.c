@@ -137,10 +137,7 @@ static void
 _wq_worker(void *arg)
 {
 	wq_ctx_t *ctx = arg;
-	int ret;
 	struct timeval tv;
-	int64_t ms;
-	int ms_diff;
 
 	// スレッド数加算
 	write_seqlock(&ctx->attr_lock);
@@ -148,7 +145,8 @@ _wq_worker(void *arg)
 	write_sequnlock(&ctx->attr_lock);
 
 	for (;;) {
-		ms_diff = -1;
+		int ret;
+		int64_t ms;
 
 		// 停止指示の場合は終了する
 		if (WQ_IS_CXFL_STOP(ctx)) {
@@ -169,6 +167,8 @@ _wq_worker(void *arg)
 		// コンテキストを実行する。
 		ret = _do_sched(ctx);
 		if (ret) {
+			int ms_diff = -1;
+
 			// threadsは厳密でなくてよい。
 			// スレッド数が閾値よりも多い場合は、
 			// スレッドを終了させる。
