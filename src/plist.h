@@ -65,6 +65,7 @@
 #endif
 
 #include <list.h>
+#include <plist.h>
 
 CPP_SRC(extern "C" {)
 

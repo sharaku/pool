@@ -55,6 +55,7 @@ set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} ${CROSS_FLAGS_CXX}
 # ソース定義
 set(MODULE_SYSTEM
 	"src/wq.c"
+	"src/slab.c"
 	)
 add_library(wq.${TARGET_SUFFIX} STATIC
 	${MODULE_SYSTEM}

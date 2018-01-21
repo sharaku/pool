@@ -8,6 +8,7 @@ TARGET   =libsharaku-unittest
 
 SRC      =gtest_list.cpp
 SRC      +=gtest_plist.cpp
+SRC      +=gtest_slab.cpp
 
 HEADERS  =
 INCLUDES =-I/usr/local/include/ -I../../src
