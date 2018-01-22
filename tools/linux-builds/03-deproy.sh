@@ -1,8 +1,9 @@
+#!/bin/sh
 # ----------------------------------------------------------------------------
 #
 #  MIT License
 #  
-#  Copyright (c) 2016 Abe Takafumi
+#  Copyright (c) 2018 Abe Takafumi
 #  
 #  Permission is hereby granted, free of charge, to any person obtaining a copy
 #  of this software and associated documentation files (the "Software"), to deal
@@ -22,39 +23,21 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE. *
 #
-#  System CMake file for libsharaku
 # ----------------------------------------------------------------------------
-cmake_minimum_required(VERSION 3.5)
 
-# ---------------------------------------------------------------
-include_directories(
-	../deproy/include/wq
-	)
-link_directories(
-	../deproy/lib/wq
-	)
+# ---------------------------------------------------------------------------
+# デプロイ先を用意する
+# ---------------------------------------------------------------------------
+cd ../..
+rm -rf ./deproy
+mkdir -p ./deproy
+mkdir -p ./deproy/include/wq
+mkdir -p ./deproy/lib/wq
 
-add_executable(sample-seqlock 
-	sample-seqlock.cpp
-	)
+# ---------------------------------------------------------------------------
+# コピーする
+# ---------------------------------------------------------------------------
+cp -pR src/*.h ./deproy/include/wq
+cp -pR libwq.linux.x86.a ./deproy/lib/wq
 
-target_link_libraries(sample-seqlock
-	pthread
-	)
 
-add_executable(sample-spinlock 
-	sample-spinlock.cpp
-	)
-
-target_link_libraries(sample-spinlock
-	pthread
-	)
-
-add_executable(sample-wq 
-	sample-wq.c
-	)
-
-target_link_libraries(sample-wq
-	wq.linux.x86
-	pthread
-	)
