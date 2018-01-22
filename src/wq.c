@@ -1,4 +1,4 @@
-/* --
+﻿/* --
 MIT License
 
 Copyright (c) 2004 Abe Takafumi
@@ -25,6 +25,7 @@ SOFTWARE.
 #include "wq.h"
 #include <string.h>
 #include <errno.h>
+#include <timeofday.h>
 
 #define	WQ_TV2MSEC(TV)	(TV.tv_sec * 1000 + TV.tv_usec / 1000)
 
@@ -137,7 +138,6 @@ static void
 _wq_worker(void *arg)
 {
 	wq_ctx_t *ctx = arg;
-	struct timeval tv;
 
 	// スレッド数加算
 	write_seqlock(&ctx->attr_lock);
@@ -154,8 +154,7 @@ _wq_worker(void *arg)
 		}
 
 		// ms単位で変化がない場合は何もしない。
-		gettimeofday(&tv, NULL);
-		ms = WQ_TV2MSEC(tv);
+		ms = generic_get_msec();
 		if (ms != ctx->base_time) {
 			write_seqlock(&ctx->attr_lock);
 			ctx->base_time = ms;

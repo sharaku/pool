@@ -168,7 +168,7 @@ __slab_node_alloc(struct slab_cache *slab)
 	smem_header_t *h;
 	char *buf;
 	int buf_sz;
-	int i;
+	unsigned int i;
 
 	buf_sz = slab->s_size + sizeof(smem_header_t) + sizeof(smem_footer_t);
 	node = (struct slab_node *)malloc(slab->s_node_size);
@@ -225,7 +225,7 @@ _slab_alloc(struct slab_cache *slab,
 {
 	struct slab_node *node;
 	char *buf = NULL;
-	int prio = -1;
+	int64_t prio = -1;
 
 	// 最大バッファ数を超える場合は獲得させない。
 	if (slab->s_max_buf_cnt &&
@@ -262,7 +262,7 @@ slab_free(void *buf)
 {
 	struct slab_node *node;
 	smem_header_t *h;
-	int prio;
+	int64_t prio;
 	int rc;
 
 	if (!buf) {

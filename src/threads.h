@@ -1,4 +1,4 @@
-/* --
+﻿/* --
 MIT License
 
 Copyright (c) 2018 Abe Takafumi
@@ -42,6 +42,7 @@ SOFTWARE.
 
 #define	MTX_TV2MSEC(TV)	(TV.tv_sec * 1000 + TV.tv_usec / 1000)
 
+#ifdef __GNUC__
 #include <pthread.h>
 #include <sys/time.h>
 CPP_SRC(extern "C" {)
@@ -126,7 +127,90 @@ __cre_task_pthread(void * (*func)(void *), void *arg)
 }
 
 CPP_SRC(})
+#elif _WIN32
+#include <Windows.h>
+#include <spinlock.h>
 
+CPP_SRC(extern "C" {)
+
+struct ___mutex_lock_win32 {
+	HANDLE	mutex;
+};
+struct ___mutex_cond_win32 {
+	HANDLE	cond;
+	spinlock_t lock;
+	int	count;
+};
+static inline void
+__init_mutex_lock_win32(struct ___mutex_lock_win32 *m)
+{
+	m->mutex = CreateMutex(NULL, FALSE, NULL);
+}
+
+static inline void
+__init_mutex_cond_win32(struct ___mutex_cond_win32 *c)
+{
+	c->cond = CreateEvent(NULL, FALSE, FALSE, NULL);
+	init_spinlock(&c->lock);
+	c->count = 0;
+}
+
+static inline void
+__mutex_lock_win32(struct ___mutex_lock_win32 *m)
+{
+	WaitForSingleObject(m->mutex, INFINITE);
+}
+
+static inline void
+__mutex_unlock_win32(struct ___mutex_lock_win32 *m)
+{
+	ReleaseMutex(m->mutex);
+}
+
+static inline void
+__mutex_signal_win32(struct ___mutex_lock_win32 *m,
+		     struct ___mutex_cond_win32 *c)
+{
+	spin_lock(&c->lock);
+	if (c->count) {
+		SetEvent(c->cond);
+	}
+	spin_unlock(&c->lock);
+}
+
+static inline void
+__mutex_timedwait_win32(struct ___mutex_lock_win32 *m,
+			struct ___mutex_cond_win32 *c,
+			int ms_timeo)
+{
+	__mutex_unlock_win32(m);
+	spin_lock(&c->lock);
+	if (!c->count) {
+		spin_unlock(&c->lock);
+		return;
+	} else {
+		c->count++;
+	}
+	spin_unlock(&c->lock);
+	WaitForSingleObject(c->cond, ms_timeo);
+	ResetEvent(c->cond);
+	spin_lock(&c->lock);
+	c->count--;
+	spin_unlock(&c->lock);
+	__mutex_lock_win32(m);
+}
+
+static inline int
+__cre_task_pthread(void * (*func)(void *), void *arg)
+{
+	return 0;
+}
+
+#else
+#error "It is an incompatible build environment."
+#endif
+
+#ifdef __GNUC__
 typedef struct ___mutex_lock_pthread mutex_lock_t;
 typedef struct ___mutex_cond_pthread mutex_cond_t;
 
@@ -137,6 +221,18 @@ typedef struct ___mutex_cond_pthread mutex_cond_t;
 #define mutex_signal(m, c)		__mutex_signal_pthread(m, c)
 #define mutex_timedwait(m, c, ms)	__mutex_timedwait_pthread(m, c, ms)
 #define cre_task(f, a)			__cre_task_pthread(f, a)
+#elif _WIN32
+typedef struct ___mutex_lock_win32 mutex_lock_t;
+typedef struct ___mutex_cond_win32 mutex_cond_t;
+
+#define init_mutex_lock(m)		__init_mutex_lock_win32(m)
+#define init_mutex_cond(c)		__init_mutex_cond_win32(c)
+#define mutex_lock(m)			__mutex_lock_win32(m)
+#define mutex_unlock(m)			__mutex_unlock_win32(m)
+#define mutex_signal(m, c)		__mutex_signal_win32(m, c)
+#define mutex_timedwait(m, c, ms)	__mutex_timedwait_win32(m, c, ms)
+#define cre_task(f, a)			__cre_task_win32(f, a)
+#endif
 
 
 #endif // _SPINLOCK_H_

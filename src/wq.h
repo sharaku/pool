@@ -1,4 +1,4 @@
-/* --
+﻿/* --
 MIT License
 
 Copyright (c) 2004 Abe Takafumi

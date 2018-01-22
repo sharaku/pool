@@ -37,8 +37,8 @@ if(NOT CMAKE_TOOLCHAIN_FILE)
 	endif()
 endif(NOT CMAKE_TOOLCHAIN_FILE)
 
-set(CMAKE_C_FLAGS "${CROSS_FLAGS_C} -Isrc")
-set(CROSS_FLAGS_CXX "${CROSS_FLAGS_CXX} -Isrc")
+include_directories(./src)
+
 
 # ÉRÉìÉpÉCÉâà¯êî
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CROSS_FLAGS_C}")
