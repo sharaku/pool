@@ -197,26 +197,6 @@ __slab_node_alloc(struct slab_cache *slab)
 	slab->s_node_cnt++;
 }
 
-// node1枚を開放する。
-// ただし、1つでもallocされている場合は開放しない。
-static int
-__slab_node_free(struct slab_node *node)
-{
-	struct slab_cache *slab;
-
-	// allocされている場合は開放してはならない。
-	// -EBUSYを応答する。
-	if (node->sn_alloc_cnt) {
-		return -EBUSY;
-	}
-	slab = node->sn_slab;
-	plist_del(&node->sn_plist, &slab->s_list);
-	free(node);
-
-	slab->s_node_cnt--;
-	return 0;
-}
-
 // slabからメモリを獲得する。
 // 空きがない場合は新しいslabを獲得する。
 void*

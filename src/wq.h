@@ -78,6 +78,7 @@ SOFTWARE.
 #include <seqlock.h>
 #include <threads.h>
 #include <atomic.h>
+#include <string.h>
 
 #ifdef __cplusplus
 	#ifndef CPP_SRC
@@ -108,38 +109,11 @@ typedef struct wq_ctx_attr {
 	uint8_t			threads_max;
 } wq_ctx_attr_t;
 
-typedef struct wq_ctx {
-	uint16_t	magic;
-	uint8_t		padding;
-	uint8_t		flags;
-	uint8_t		threads;
-	uint8_t		idle_threads;
-	uint8_t		threads_min;
-	uint8_t		threads_max;
-	int64_t		base_time;
-
-	// 優先度付きjobリスト
-	// 一般ユーザが使用可能な優先度は 0 ～ 255
-	// システムは-99 ～ 0
-	// default = 128
-	struct plist_head	sched_plist;
-	// 時間順のjobリスト
-	// 起動時の時間を0として、経過msで登録する。
-	struct plist_head	timer_plist;
-
-	seqlock_t	attr_lock;
-	seqlock_t	sched_lock;
-	seqlock_t	timer_lock;
-	mutex_lock_t	task_lock;
-	mutex_cond_t	task_cond;
-} wq_ctx_t;
-
 typedef struct wq_item {
 	struct plist_node	node;		///< スケジューラのノード
 	wq_stage_t		stage;
 	wq_arg_t		arg;
 	int64_t			milli_sec;	///< タイムアウト値
-	wq_ctx_t*		context;	///< スケジューラコンテキスト
 	int16_t			prio;		///< 優先度
 	uint8_t			is_timeout:1;	///< タイムアウトしているか
 	uint8_t			rsv_flg:7;	///< 
@@ -147,41 +121,51 @@ typedef struct wq_item {
 	uint32_t		magic;		// マジックコード
 } wq_item_t;
 
+#define	WQ_STAT_SUSPEND	(0)
+#define	WQ_STAT_READY	(1)
+#define	WQ_STAT_RUN	(2)
+#define	WQ_STAT_WAIT	(3)
+
+#define	WQ_CXFL_INIT	(1 << 0)
+#define	WQ_CXFL_STOP	(1 << 1)
+
+#define	WQ_ITMFL_TIMEO		(1 << 0)
+#define	WQ_DEFAULT_TIMEO_MS	(10000)
+
+#define	WQ_CTX_MAGIC	('W' << 8 | 'Q')
+
 // コンテキスト制御
 //  wq_ctx_t は wq_init() を使用して初期化を行う。
 //  wq_start() を使用することで別スレッドとしてコンテキストを実行する。
 //  wq_destroy() を使用することでコンテキストを停止する。
 //  wq_run() を使用することでコンテキストを実行する。
-extern int wq_init(wq_ctx_t *ctx, wq_ctx_attr_t *attr);
-static inline void
-wq_attr_init(wq_ctx_attr_t *attr)
-{
-	attr->threads_min = 1;
-	attr->threads_max = 1;
-}
-static inline void
-wq_attr_setthreads(wq_ctx_attr_t *attr, uint8_t min, uint8_t max)
-{
-	attr->threads_min = min;
-	attr->threads_max = max;
-}
+
 //extern void wq_start(wq_ctx_t *);
 //extern void wq_destroy(wq_ctx_t *);
 //extern void wq_exit(wq_ctx_t *);
-extern void wq_run(wq_ctx_t *ctx);
+extern void wq_run(void);
 //extern void wq_is_idle(wq_ctx_t *);
 //extern void wq_wait(wq_ctx_t *);
 
-extern void wq_init_item(wq_item_t *item, wq_ctx_t *ctx);
-static inline void
-wq_init_item_prio(wq_item_t *item, wq_ctx_t *ctx, int16_t prio)
+static void
+wq_init_item(wq_item_t *item)
 {
-	wq_init_item(item, ctx);
+	memset(item, 0, sizeof *item);
+	item->stat = WQ_STAT_SUSPEND;
+	init_plist_node(&item->node, 0);
+	item->prio = WQ_DEFAULT_PRIO;
+	item->magic = WQ_CTX_MAGIC;
+}
+
+static inline void
+wq_init_item_prio(wq_item_t *item, int16_t prio)
+{
+	wq_init_item(item);
 	item->prio = prio;
 }
 //extern void wq_set_prio(wq_item_t *item, int16_t prio);
-extern void wq_sched(wq_item_t *item, wq_stage_t cb, wq_arg_t arg);
-extern void wq_timer_sched(wq_item_t *item, wq_msec_t ms, wq_stage_t cb, wq_arg_t *arg);
+extern int wq_sched(wq_item_t *item, wq_stage_t cb, wq_arg_t arg);
+extern int wq_timer_sched(wq_item_t *item, wq_msec_t ms, wq_stage_t cb, wq_arg_t *arg);
 //extern void wq_cancel(wq_item_t *);
 
 CPP_SRC(})

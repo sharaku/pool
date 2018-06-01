@@ -30,7 +30,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 # ---------------------------------------------------------------
-# windows�̏ꍇ�́A�����Őݒ����荞��
+# windowsの場合は、ここで設定を取り込む
 if(NOT CMAKE_TOOLCHAIN_FILE)
 	if(WIN32)
 		include(cmake/win10-x86.cmake)
@@ -40,7 +40,7 @@ endif(NOT CMAKE_TOOLCHAIN_FILE)
 include_directories(./src)
 
 
-# �R���p�C������
+# コンパイラ引数
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CROSS_FLAGS_C}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CROSS_FLAGS_CXX}")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ${CROSS_FLAGS_C} -O0")
@@ -52,10 +52,11 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${CROSS_FLAGS_CXX} -O2")
 set(CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL} ${CROSS_FLAGS_C} -O3")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} ${CROSS_FLAGS_CXX} -O3")
 
-# �\�[�X��`
+# ソース定義
 set(MODULE_SYSTEM
 	"src/wq.c"
 	"src/slab.c"
+	"src/wq-event.c"
 	)
 add_library(wq.${TARGET_SUFFIX} STATIC
 	${MODULE_SYSTEM}

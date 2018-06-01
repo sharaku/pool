@@ -26,6 +26,11 @@ SOFTWARE.
 #include <string.h>
 #include <errno.h>
 #include <timeofday.h>
+#include <stdio.h>
+
+
+#define WQ_TRACELOG(fmt, ...)	printf("%s :"fmt"\n", __func__ __VA_ARGS__)
+
 
 #define	WQ_TV2MSEC(TV)	(TV.tv_sec * 1000 + TV.tv_usec / 1000)
 
@@ -35,35 +40,77 @@ SOFTWARE.
 	#define WQ_ASSERT(x)
 #endif
 
-#define	WQ_STAT_SUSPEND	(0)
-#define	WQ_STAT_READY	(1)
-#define	WQ_STAT_RUN	(2)
-#define	WQ_STAT_WAIT	(3)
-
-#define	WQ_CXFL_INIT	(1 << 0)
-#define	WQ_CXFL_STOP	(1 << 1)
-
 #define	WQ_IS_CXFL_INIT(C)	((C)->flags & WQ_CXFL_INIT)
 #define	WQ_IS_CXFL_STOP(C)	((C)->flags & WQ_CXFL_STOP)
 
 #define	WQ_SET_CXFL_INIT(C)	((C)->flags |= WQ_CXFL_INIT)
 #define	WQ_SET_CXFL_STOP(C)	((C)->flags |= WQ_CXFL_STOP)
 
-#define	WQ_ITMFL_TIMEO		(1 << 0)
-#define	WQ_DEFAULT_TIMEO_MS	(10000)
-#define	WQ_CTX_MAGIC	('W' << 8 | 'Q')
+typedef struct wq_ctx {
+	uint16_t	magic;
+	uint8_t		padding;
+	uint8_t		flags;
+	uint8_t		threads;
+	uint8_t		idle_threads;
+	uint8_t		threads_min;
+	uint8_t		threads_max;
+	int64_t		base_time;
 
+	// 優先度付きjobリスト
+	// 一般ユーザが使用可能な優先度は 0 ～ 255
+	// システムは-99 ～ 0
+	// default = 128
+	struct plist_head	sched_plist;
+	// 時間順のjobリスト
+	// 起動時の時間を0として、経過msで登録する。
+	struct plist_head	timer_plist;
 
-static void _wq_worker(void *arg);
+	seqlock_t	attr_lock;
+	seqlock_t	sched_lock;
+	seqlock_t	timer_lock;
+	mutex_lock_t	task_lock;
+	mutex_cond_t	task_cond;
+} wq_ctx_t;
 
+static wq_ctx_t __ctx = {
+	WQ_CTX_MAGIC,				// magic;
+	0,					// padding;
+	0,					// flags;
+	0,					// threads;
+	0,					// idle_threads;
+	1,					// threads_min;
+	1,					// threads_max;
+	0,					// base_time;
+	PLIST_HEAD_INIT(__ctx.sched_plist),	// sched_plist;
+	PLIST_HEAD_INIT(__ctx.timer_plist),	// timer_plist;
+	SEQLOCK_INIT,				// attr_lock;
+	SEQLOCK_INIT,				// sched_lock;
+	SEQLOCK_INIT,				// timer_lock;
+	// task_lock;
+	// task_cond;
+
+};
+
+__attribute__((constructor))
+static void
+__wq_constructor(void)
+{
+	init_mutex_lock(&__ctx.task_lock);
+	init_mutex_cond(&__ctx.task_cond);
+	__ctx.base_time = generic_get_msec();
+	WQ_SET_CXFL_INIT(&__ctx);
+	mb();
+	return;
+}
 
 // スケジュールで順番が来たitemを処理する。
 // 処理対象がなければ1を応答する。
 static inline void
-_do_sched_timer(wq_ctx_t *ctx)
+__do_sched_timer(void)
 {
-	wq_item_t	*item = NULL;
-	wq_item_t	*n = NULL;
+	wq_ctx_t *ctx = &__ctx;
+	wq_item_t *item = NULL;
+	wq_item_t *n = NULL;
 
 	struct list_head	list = LIST_HEAD_INIT(list);
 
@@ -102,8 +149,9 @@ out:
 // スケジュールで順番が来たitemを処理する。
 // 処理対象がなければ1を応答する。
 static inline int
-_do_sched(wq_ctx_t *ctx)
+__do_sched(void)
 {
+	wq_ctx_t *ctx = &__ctx;
 	wq_item_t *item;
 
 	write_seqlock(&ctx->sched_lock);
@@ -135,9 +183,11 @@ _do_sched(wq_ctx_t *ctx)
 // workerスレッドのエントリ。
 // argはコンテキストアドレス。
 static void
-_wq_worker(void *arg)
+__wq_worker(void *arg)
 {
-	wq_ctx_t *ctx = arg;
+	WQ_TRACELOG("start worker");
+
+	wq_ctx_t *ctx = &__ctx;
 
 	// スレッド数加算
 	write_seqlock(&ctx->attr_lock);
@@ -160,11 +210,11 @@ _wq_worker(void *arg)
 			ctx->base_time = ms;
 			write_sequnlock(&ctx->attr_lock);
 
-			_do_sched_timer(ctx);
+			__do_sched_timer();
 		}
 
 		// コンテキストを実行する。
-		ret = _do_sched(ctx);
+		ret = __do_sched();
 		if (ret) {
 			int ms_diff = -1;
 
@@ -213,23 +263,31 @@ _wq_worker(void *arg)
 	write_sequnlock(&ctx->attr_lock);
 }
 
-static inline void
-_push_sched(wq_item_t *item, wq_ctx_t *ctx)
+static inline int
+__push_sched(wq_item_t *item)
 {
+	wq_ctx_t *ctx = &__ctx;
 	int seq;
+	int ret = 0;
 
-	// 初期化前の場合はミューテックスをかけられないため、
-	// 排他せずに登録する。
-	item->node.prio = item->prio;
-
-	if (!WQ_IS_CXFL_INIT(ctx)) {
-		plist_add(&(item->node), &(ctx->sched_plist));
+	write_seqlock(&ctx->sched_lock);
+	// 2重登録の場合はエラーにする。
+	if (!plist_empty(&(item->node))) {
+		write_sequnlock(&ctx->sched_lock);
+		ret = EBUSY;
+		WQ_TRACELOG("EBUSY");
 		goto end;
 	}
 
+	item->node.prio = item->prio;
+
 	// キューに積む
-	write_seqlock(&ctx->sched_lock);
+//	WQ_TRACELOG("plist_add");
 	plist_add(&(item->node), &(ctx->sched_plist));
+	if (!WQ_IS_CXFL_INIT(ctx)) {
+		write_sequnlock(&ctx->sched_lock);
+		goto end;
+	}
 	write_sequnlock(&ctx->sched_lock);
 
 	// idleのスレッドがあれば起動する
@@ -242,26 +300,34 @@ _push_sched(wq_item_t *item, wq_ctx_t *ctx)
 	} while(read_seqretry(&ctx->attr_lock, seq));
 
 end:
-	return;
+	return ret;
 }
 
-static inline void
-_push_timer(wq_item_t *item, wq_ctx_t *ctx)
+static inline int
+__push_timer(wq_item_t *item)
 {
+	wq_ctx_t *ctx = &__ctx;
 	int seq;
+	int ret = 0;
 
-	// 初期化前の場合はミューテックスをかけられないため、排他せずに
-	// 登録する。
-	item->node.prio = item->milli_sec;
-
-	if (!WQ_IS_CXFL_INIT(ctx)) {
-		plist_add(&(item->node), &(ctx->timer_plist));
+	write_seqlock(&ctx->timer_lock);
+	// 2重登録の場合はエラーにする。
+	if (!plist_empty(&(item->node))) {
+		write_sequnlock(&ctx->timer_lock);
+		ret = EBUSY;
+		WQ_TRACELOG("EBUSY");
 		goto end;
 	}
 
+	item->node.prio = item->milli_sec;
+
 	// キューに積む
-	write_seqlock(&ctx->timer_lock);
+//	WQ_TRACELOG("plist_add");
 	plist_add(&(item->node), &(ctx->timer_plist));
+	if (!WQ_IS_CXFL_INIT(ctx)) {
+		write_sequnlock(&ctx->timer_lock);
+		goto end;
+	}
 	write_sequnlock(&ctx->timer_lock);
 
 	// idleのスレッドがあれば起動する
@@ -274,67 +340,17 @@ _push_timer(wq_item_t *item, wq_ctx_t *ctx)
 	} while(read_seqretry(&ctx->attr_lock, seq));
 
 end:
-	return;
+	return ret;
+}
+
+void
+wq_run(void)
+{
+	// runが指定された場合は、自スレッドがworkerスレッドになる。
+	__wq_worker(NULL);
 }
 
 int
-wq_init(wq_ctx_t *ctx, wq_ctx_attr_t *attr)
-{
-	memset(ctx, 0, sizeof *ctx);
-	ctx->magic		= WQ_CTX_MAGIC;
-
-	if (!attr) {
-		ctx->threads_min = 1;
-		ctx->threads_max = 1;
-	} else {
-		if (!attr->threads_min) {
-			ctx->threads_min = attr->threads_min;
-		} else {
-			ctx->threads_min = 1;
-		}
-		if (!attr->threads_max) {
-			ctx->threads_max = attr->threads_max;
-		} else {
-			ctx->threads_max = 1;
-		}
-	}
-	if (ctx->threads_min > ctx->threads_max) {
-		return EINVAL;
-	}
-
-	init_plist_head(&ctx->sched_plist);
-	init_plist_head(&ctx->timer_plist);
-
-	init_seqlock(&ctx->attr_lock);
-	init_seqlock(&ctx->sched_lock);
-	init_seqlock(&ctx->timer_lock);
-	init_mutex_lock(&ctx->task_lock);
-	init_mutex_cond(&ctx->task_cond);
-	mb();
-	WQ_SET_CXFL_INIT(ctx);
-	return 0;
-}
-
-void
-wq_run(wq_ctx_t *ctx)
-{
-	// runが指定された場合は、自スレッドがworkerスレッドになる。
-	_wq_worker(ctx);
-}
-
-
-void
-wq_init_item(wq_item_t *item, wq_ctx_t *ctx)
-{
-	memset(item, 0, sizeof *item);
-	item->stat = WQ_STAT_SUSPEND;
-	init_plist_node(&item->node, 0);
-	item->context = ctx;
-	item->prio = WQ_DEFAULT_PRIO;
-	item->magic = WQ_CTX_MAGIC;
-}
-
-void
 wq_sched(wq_item_t *item, wq_stage_t cb, wq_arg_t arg)
 {
 	// Jobの初期化
@@ -345,22 +361,27 @@ wq_sched(wq_item_t *item, wq_stage_t cb, wq_arg_t arg)
 
 	// スケジューラの末尾へ登録後、待ち合わせているスケジューラを起動する
 	// singleスケジューラの場合はこの起動に意味はなく、処理がスケジューラへ
-	// 戻された段階で次を処理する
-	_push_sched(item, item->context);
+	// 戻された段階で次を処理する。
+	// 多重スケジュールの場合はEBUSYを応答する。
+//	WQ_TRACELOG("__push_sched");
+	return __push_sched(item);
 }
 
-void
+int
 wq_timer_sched(wq_item_t *item, wq_msec_t ms, wq_stage_t cb, wq_arg_t *arg)
 {
+	wq_ctx_t	*ctx = &__ctx;
+
 	// Jobの初期化
 	item->stat	= WQ_STAT_WAIT;
 	item->stage 	= cb;
 	item->arg 	= arg;
-	mb();
-	item->milli_sec	= item->context->base_time + ms;
+	item->milli_sec	= ctx->base_time + ms;
 
 	// スケジューラの末尾へ登録後、待ち合わせているスケジューラを起動する
 	// singleスケジューラの場合はこの起動に意味はなく、処理がスケジューラへ
 	// 戻された段階で次を処理する
-	_push_timer(item, item->context);
+	// 多重スケジュールの場合はEBUSYを応答する。
+//	WQ_TRACELOG("__push_timer");
+	return __push_timer(item);
 }

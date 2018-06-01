@@ -29,7 +29,7 @@ cd ../..
 mkdir -p ./result
 
 # x86-linuxビルドを行う
-do_x86_linux_build()
+do_libwq_x86_linux_build()
 {
 	rm -f CMakeCache.txt cmake_install.cmake rm Makefile
 	rm -rf CMakeFiles
@@ -37,11 +37,24 @@ do_x86_linux_build()
 	make 2>&1 | tee ./result/make.result.linux-x86
 }
 
+# example-x86-linuxビルドを行う
+do_example_x86_linux_build()
+{
+	cd example
+	rm -f CMakeCache.txt cmake_install.cmake rm Makefile
+	rm -rf CMakeFiles
+	cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/linux-x86.cmake
+	make 2>&1 | tee ./result/make.result.linux-x86
+}
+
 case $1 in
 	x86-linux )
-		do_x86_linux_build
+		do_libwq_x86_linux_build
+		;;
+	example-x86-linux )
+		do_example_x86_linux_build
 		;;
 	* )
-		do_x86_linux_build
+		do_libwq_x86_linux_build
 		;;
 esac
