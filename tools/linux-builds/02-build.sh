@@ -47,6 +47,13 @@ do_example_x86_linux_build()
 	make 2>&1 | tee ./result/make.result.linux-x86
 }
 
+# example-x86-linuxビルドを行う
+do_tool_x86_linux_build()
+{
+	make clean -C ../logvewer/ 2>&1
+	make -C ../logvewer/ 2>&1
+}
+
 case $1 in
 	x86-linux )
 		do_libwq_x86_linux_build
@@ -55,6 +62,7 @@ case $1 in
 		do_example_x86_linux_build
 		;;
 	* )
+		do_tool_x86_linux_build
 		do_libwq_x86_linux_build
 		;;
 esac

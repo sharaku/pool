@@ -57,6 +57,7 @@ set(MODULE_SYSTEM
 	"src/wq.c"
 	"src/slab.c"
 	"src/wq-event.c"
+	"src/wq-log.c"
 	)
 add_library(wq.${TARGET_SUFFIX} STATIC
 	${MODULE_SYSTEM}

@@ -27,6 +27,7 @@ SOFTWARE.
 #include <errno.h>
 #include <timeofday.h>
 #include <stdio.h>
+#include "wq-log.h"
 
 
 #define WQ_TRACELOG(fmt, ...)	printf("%s :"fmt"\n", __func__ __VA_ARGS__)
@@ -190,14 +191,14 @@ __do_sched(void)
 static void
 __wq_worker(void *arg)
 {
-	WQ_TRACELOG("start worker");
-
 	wq_ctx_t *ctx = &__ctx;
 
 	// スレッド数加算
 	write_seqlock(&ctx->attr_lock);
 	++ctx->threads;
 	write_sequnlock(&ctx->attr_lock);
+
+	wq_infolog64("start worker threads=%ld", ctx->threads);
 
 	for (;;) {
 		int ret;
@@ -267,6 +268,8 @@ __wq_worker(void *arg)
 	write_seqlock(&ctx->attr_lock);
 	--ctx->threads;
 	write_sequnlock(&ctx->attr_lock);
+
+	wq_infolog64("stop worker threads=%ld", ctx->threads);
 }
 
 static inline int
@@ -281,14 +284,13 @@ __push_sched(wq_item_t *item)
 	if (!plist_empty(&(item->node))) {
 		write_sequnlock(&ctx->sched_lock);
 		ret = EBUSY;
-		WQ_TRACELOG("EBUSY");
+		wq_infolog64("EBUSY");
 		goto end;
 	}
 
 	item->node.prio = item->prio;
 
 	// キューに積む
-//	WQ_TRACELOG("plist_add");
 	plist_add(&(item->node), &(ctx->sched_plist));
 	if (!WQ_IS_CXFL_INIT(ctx)) {
 		write_sequnlock(&ctx->sched_lock);
@@ -321,14 +323,13 @@ __push_timer(wq_item_t *item)
 	if (!plist_empty(&(item->node))) {
 		write_sequnlock(&ctx->timer_lock);
 		ret = EBUSY;
-		WQ_TRACELOG("EBUSY");
+		wq_infolog64("EBUSY");
 		goto end;
 	}
 
 	item->node.prio = item->milli_sec;
 
 	// キューに積む
-//	WQ_TRACELOG("plist_add");
 	plist_add(&(item->node), &(ctx->timer_plist));
 	if (!WQ_IS_CXFL_INIT(ctx)) {
 		write_sequnlock(&ctx->timer_lock);
@@ -369,7 +370,6 @@ wq_sched(wq_item_t *item, wq_stage_t cb, wq_arg_t arg)
 	// singleスケジューラの場合はこの起動に意味はなく、処理がスケジューラへ
 	// 戻された段階で次を処理する。
 	// 多重スケジュールの場合はEBUSYを応答する。
-//	WQ_TRACELOG("__push_sched");
 	return __push_sched(item);
 }
 
@@ -388,6 +388,5 @@ wq_timer_sched(wq_item_t *item, wq_msec_t ms, wq_stage_t cb, wq_arg_t *arg)
 	// singleスケジューラの場合はこの起動に意味はなく、処理がスケジューラへ
 	// 戻された段階で次を処理する
 	// 多重スケジュールの場合はEBUSYを応答する。
-//	WQ_TRACELOG("__push_timer");
 	return __push_timer(item);
 }

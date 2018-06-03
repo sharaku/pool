@@ -33,11 +33,13 @@ rm -rf ./deproy
 mkdir -p ./deproy
 mkdir -p ./deproy/include/wq
 mkdir -p ./deproy/lib/wq
+mkdir -p ./deproy/bin/wq
 
 # ---------------------------------------------------------------------------
 # コピーする
 # ---------------------------------------------------------------------------
 cp -pR src/*.h ./deproy/include/wq
 cp -pR libwq.linux.x86.a ./deproy/lib/wq
+cp -pR tools/logvewer/logviewr ./deproy/bin/wq
 
 
