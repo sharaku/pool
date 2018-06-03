@@ -46,6 +46,10 @@ SOFTWARE.
 #define	WQ_SET_CXFL_INIT(C)	((C)->flags |= WQ_CXFL_INIT)
 #define	WQ_SET_CXFL_STOP(C)	((C)->flags |= WQ_CXFL_STOP)
 
+// timeofday.h の実態定義
+int64_t	____generictime_usec = 0;
+int64_t	____generictime_msec = 0;
+
 typedef struct wq_ctx {
 	uint16_t	magic;
 	uint8_t		padding;
@@ -95,9 +99,10 @@ __attribute__((constructor))
 static void
 __wq_constructor(void)
 {
+	generic_upd_generictime();
 	init_mutex_lock(&__ctx.task_lock);
 	init_mutex_cond(&__ctx.task_cond);
-	__ctx.base_time = generic_get_msec();
+	__ctx.base_time = generic_get_msec_fast();
 	WQ_SET_CXFL_INIT(&__ctx);
 	mb();
 	return;
@@ -204,7 +209,8 @@ __wq_worker(void *arg)
 		}
 
 		// ms単位で変化がない場合は何もしない。
-		ms = generic_get_msec();
+		generic_upd_generictime();
+		ms = generic_get_msec_fast();
 		if (ms != ctx->base_time) {
 			write_seqlock(&ctx->attr_lock);
 			ctx->base_time = ms;
