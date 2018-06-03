@@ -40,7 +40,10 @@ SOFTWARE.
 	#endif
 #endif
 
+#include <stdint.h>
 #ifdef __linux__
+	#include <stddef.h>
+	#include <sys/time.h>
 	#define	GENERIC_TV2USEC(TV)	((TV)->tv_sec * 1000000 + (TV)->tv_usec)
 	static inline int64_t generic_get_usec_linux(void) {
 		struct timeval tv;
