@@ -4,7 +4,7 @@
 
 CC       =g++
 CFLAGS   =-Wall -ansi -pedantic -g
-TARGET   =libsharaku-unittest
+TARGET   =libwq-unittest
 
 SRC      =gtest_list.cpp
 SRC      +=gtest_plist.cpp
