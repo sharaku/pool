@@ -1,8 +1,9 @@
+#!/bin/sh
 # ----------------------------------------------------------------------------
 #
 #  MIT License
 #  
-#  Copyright (c) 2017 Abe Takafumi
+#  Copyright (c) 2018 Abe Takafumi
 #  
 #  Permission is hereby granted, free of charge, to any person obtaining a copy
 #  of this software and associated documentation files (the "Software"), to deal
@@ -24,20 +25,19 @@
 #
 # ----------------------------------------------------------------------------
 
-all: clean check build testing deproy
+# ---------------------------------------------------------------------------
+# デプロイ先を用意する
+# ---------------------------------------------------------------------------
+cd ../..
+rm -rf ./deproy
+mkdir -p ./deproy
+mkdir -p ./deproy/include/wq
+mkdir -p ./deproy/lib/wq
 
-check:
-	sh 01-static_check.sh
-
-build: check
-	sh 02-build.sh
-
-testing: build
-	sh 03-testing.sh
-
-deproy: build
-	sh 04-deproy.sh
+# ---------------------------------------------------------------------------
+# コピーする
+# ---------------------------------------------------------------------------
+cp -pR src/*.h ./deproy/include/wq
+cp -pR libwq.linux.x86.a ./deproy/lib/wq
 
 
-clean:
-	sh 00-clear.sh
