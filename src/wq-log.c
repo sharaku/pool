@@ -72,7 +72,7 @@ _wq_log_init(void)
 }
 
 static inline void
-__wq_trace_internal(struct wq_trace *trc, const char *func,
+___wq_trace_internal(struct wq_trace *trc, const char *func,
 		    uint16_t line, int8_t type, int8_t u8)
 {
 	trc->func = func;
@@ -106,7 +106,7 @@ __wq_trace_internal(const char *func, uint16_t line, int8_t arg0)
 	__wq_infolog_internal_idxadd(WQ_LOG_BLKS(struct wq_trace));
 	info = (struct wq_trace*)(__wq_log_sys_info.log_top + idx * WQ_SYSINFO_LOG_BASE_SZ);
 
-	__wq_trace_internal(&(info->header), func, line, WQ_LOGTYPE_TRACE, arg0);
+	___wq_trace_internal(info, func, line, WQ_LOGTYPE_TRACE, arg0);
 }
 
 void
@@ -120,7 +120,7 @@ __wq_infolog_internal_wq_log64_32(const char *fmt, const char *func,
 	__wq_infolog_internal_idxadd(WQ_LOG_BLKS(struct wq_log64_32));
 	info = (struct wq_log64_32*)(__wq_log_sys_info.log_top + idx * WQ_SYSINFO_LOG_BASE_SZ);
 
-	__wq_trace_internal(&(info->header), func, line, WQ_LOGTYPE_INFO64_32, 0);
+	___wq_trace_internal(&(info->header), func, line, WQ_LOGTYPE_INFO64_32, 0);
 	info->format = fmt;
 	info->arg[0] = arg0;
 }
@@ -136,7 +136,7 @@ __wq_infolog_internal_wq_log64_64(const char *fmt, const char *func, uint16_t li
 	__wq_infolog_internal_idxadd(WQ_LOG_BLKS(struct wq_log64_64));
 	info = (struct wq_log64_64*)(__wq_log_sys_info.log_top + idx * WQ_SYSINFO_LOG_BASE_SZ);
 
-	__wq_trace_internal(&(info->header), func, line, WQ_LOGTYPE_INFO64_64, 0);
+	___wq_trace_internal(&(info->header), func, line, WQ_LOGTYPE_INFO64_64, 0);
 	info->format = fmt;
 	info->arg[0] = arg0;
 	info->arg[1] = arg1;
