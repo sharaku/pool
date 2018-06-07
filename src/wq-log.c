@@ -86,7 +86,7 @@ static inline void
 __wq_infolog_internal_idxadd(int idx)
 {
 	// 一番大きなログが入らなければローテーションする。
-	if (__wq_log_sys_info.header->head_idx > (WQ_SYSINFO_LOG_SIZE / WQ_SYSINFO_LOG_BASE_SZ) - 2) {
+	if (__wq_log_sys_info.header->head_idx > (WQ_SYSINFO_LOG_SIZE / WQ_SYSINFO_LOG_BASE_SZ) - WQ_LOG_MAXBLKS) {
 		__wq_log_sys_info.header->head_idx = 0;
 	} else {
 		__wq_log_sys_info.header->head_idx += idx;
@@ -97,6 +97,19 @@ __wq_infolog_internal_idxadd(int idx)
 }
 
 void
+__wq_trace_internal(const char *func, uint16_t line, int8_t arg0)
+{
+	uint32_t idx = 0;
+	struct wq_trace *info = NULL;
+
+	idx = __wq_log_sys_info.header->head_idx;
+	__wq_infolog_internal_idxadd(WQ_LOG_BLKS(struct wq_trace));
+	info = (struct wq_trace*)(__wq_log_sys_info.log_top + idx * WQ_SYSINFO_LOG_BASE_SZ);
+
+	__wq_trace_internal(&(info->header), func, line, WQ_LOGTYPE_TRACE, arg0);
+}
+
+void
 __wq_infolog_internal_wq_log64_32(const char *fmt, const char *func,
 				  uint16_t line, int64_t arg0)
 {
@@ -104,7 +117,7 @@ __wq_infolog_internal_wq_log64_32(const char *fmt, const char *func,
 	struct wq_log64_32 *info = NULL;
 
 	idx = __wq_log_sys_info.header->head_idx;
-	__wq_infolog_internal_idxadd(1);
+	__wq_infolog_internal_idxadd(WQ_LOG_BLKS(struct wq_log64_32));
 	info = (struct wq_log64_32*)(__wq_log_sys_info.log_top + idx * WQ_SYSINFO_LOG_BASE_SZ);
 
 	__wq_trace_internal(&(info->header), func, line, WQ_LOGTYPE_INFO64_32, 0);
@@ -120,7 +133,7 @@ __wq_infolog_internal_wq_log64_64(const char *fmt, const char *func, uint16_t li
 	struct wq_log64_64 *info = NULL;
 
 	idx = __wq_log_sys_info.header->head_idx;
-	__wq_infolog_internal_idxadd(2);
+	__wq_infolog_internal_idxadd(WQ_LOG_BLKS(struct wq_log64_64));
 	info = (struct wq_log64_64*)(__wq_log_sys_info.log_top + idx * WQ_SYSINFO_LOG_BASE_SZ);
 
 	__wq_trace_internal(&(info->header), func, line, WQ_LOGTYPE_INFO64_64, 0);
@@ -130,37 +143,5 @@ __wq_infolog_internal_wq_log64_64(const char *fmt, const char *func, uint16_t li
 	info->arg[2] = arg2;
 	info->arg[3] = arg3;
 	info->arg[4] = arg4;
-}
-
-void
-__wq_infolog_print(void)
-{
-	int idx;
-	int blks = 0;
-	struct wq_trace		*trace;
-	struct wq_log64_32	*_log64_32;
-	struct wq_log64_64	*_log64_64;
-	
-	for (idx = 0; idx < __wq_log_sys_info.header->head_idx; idx += blks) {
-		trace = (struct wq_trace*)(__wq_log_sys_info.log_top + idx * WQ_SYSINFO_LOG_BASE_SZ);
-		switch (trace->type) {
-		case WQ_LOGTYPE_INFO64_32:
-			_log64_32 = (struct wq_log64_32*)trace;
-			printf("%-9ld %s(%d) ", __wq_log->base_usec + trace->usec, trace->func, trace->line);
-			printf(_log64_32->format, _log64_32->arg[0]);
-			printf("\n");
-			blks = 1;
-			break;
-		case WQ_LOGTYPE_INFO64_64:
-			_log64_64 = (struct wq_log64_64*)trace;
-			printf("%-9ld %s(%d) ", __wq_log->base_usec + trace->usec, trace->func, trace->line);
-			printf(_log64_64->format, _log64_64->arg[0], _log64_64->arg[1], _log64_64->arg[2], _log64_64->arg[3], _log64_64->arg[4]);
-			printf("\n");
-			blks = 2;
-			break;
-		default:
-			blks = WQ_SYSINFO_LOG_SIZE;
-		}
-	}
 }
 

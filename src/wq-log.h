@@ -27,21 +27,6 @@
 #ifndef _WQ_LOG_H
 #define _WQ_LOG_H
 
-#ifdef __cplusplus
-	#ifndef CPP_SRC
-		#define CPP_SRC(x) x
-	#endif
-	#if __cplusplus >= 201103L	// >= C++11
-	
-	#else				// < C++11
-
-	#endif
-#else
-	#ifndef CPP_SRC
-		#define CPP_SRC(x)
-	#endif
-#endif
-
 // info logの変換方法
 //   wq_log::formatは
 //     1. objdump -h {オブジェクト名} で.rodataの先頭アドレスとファイル
@@ -60,6 +45,7 @@
 CPP_SRC(extern "C" {)
 
 enum {
+	WQ_LOGTYPE_TRACE,
 	WQ_LOGTYPE_INFO64_32,
 	WQ_LOGTYPE_INFO64_64,
 };
@@ -85,7 +71,7 @@ struct wq_log_header
 	struct wq_log_type_header	sys_info;
 };
 #define WQ_LOGHD_SIZE		128
-#define WQ_SYSINFO_LOG_BASE_SZ	32
+#define WQ_SYSINFO_LOG_BASE_SZ	16
 #define WQ_SYSINFO_LOG_SIZE	(256 * 1024)
 
 // 16byte
@@ -106,13 +92,22 @@ struct wq_log64_64
 	int64_t		arg[5];
 };
 
-// 64byte
+// 32byte
 struct wq_log64_32
 {
 	struct wq_trace	header;
 	const char	*format;
 	int64_t		arg[1];
 };
+
+union __wq_log
+{
+	struct wq_trace		trace;
+	struct wq_log64_32	log64_32;
+	struct wq_log64_64	log64_64;
+};
+#define WQ_LOG_MAXBLKS (sizeof(union __wq_log) / WQ_SYSINFO_LOG_BASE_SZ)
+#define WQ_LOG_BLKS(type) (sizeof(type) / WQ_SYSINFO_LOG_BASE_SZ)
 
 // ログ採取
 extern void __wq_infolog_internal_wq_log64_32(const char *fmt, const char *func, uint16_t line, int64_t arg0);
