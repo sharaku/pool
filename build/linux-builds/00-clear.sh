@@ -25,7 +25,12 @@
 #
 # ----------------------------------------------------------------------------
 
-# cppcheckを使用してコードチェックを行う
-cd ../..
-mkdir -p ./result
-cppcheck --enable=all --xml src 2> ./result/result-cppcheck.xml
+
+cd `dirname $0`
+readonly OBJ_PATH=`pwd`
+readonly DEF_LOGPATH=${OBJ_PATH}/result
+readonly DEF_DEPROYPATH=${OBJ_PATH}/deproy
+readonly BASE_PATH=${OBJ_PATH}/../../
+
+rm -rf ${DEF_LOGPATH}
+rm -rf ${DEF_DEPROYPATH}

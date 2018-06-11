@@ -33,7 +33,7 @@ SOFTWARE.
 //    再度待ちに入る。
 // itronの場合は
 //  - event flagを使用して待ち合わせる。
-#include <wq.h>
+#include <wq/wq.h>
 #include <sys/epoll.h>
 #include <string.h>
 

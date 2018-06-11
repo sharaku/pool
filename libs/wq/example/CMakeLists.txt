@@ -1,9 +1,8 @@
-#!/bin/sh
 # ----------------------------------------------------------------------------
 #
 #  MIT License
 #  
-#  Copyright (c) 2017 Abe Takafumi
+#  Copyright (c) 2016 Abe Takafumi
 #  
 #  Permission is hereby granted, free of charge, to any person obtaining a copy
 #  of this software and associated documentation files (the "Software"), to deal
@@ -23,9 +22,38 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE. *
 #
+#  System CMake file for libsharaku
 # ----------------------------------------------------------------------------
+cmake_minimum_required(VERSION 3.5)
 
-cd ../..
-rm -rf result
-rm -f CMakeCache.txt cmake_install.cmake rm Makefile
-rm -rf CMakeFiles
+# ---------------------------------------------------------------
+include_directories(
+	../../../include/
+	)
+link_directories(
+	../../../libs/wq/
+	../../../libs/log/
+	../../../libs/generic/
+	)
+
+add_executable(sample-wq 
+	sample-wq.c
+	)
+
+target_link_libraries(sample-wq
+	wq.wq.linux.x86
+	wq.log.linux.x86
+	wq.generic.linux.x86
+	pthread
+	)
+
+add_executable(sample-wqev 
+	sample-wqev.c
+	)
+
+target_link_libraries(sample-wqev
+	wq.wq.linux.x86
+	wq.log.linux.x86
+	wq.generic.linux.x86
+	pthread
+	)

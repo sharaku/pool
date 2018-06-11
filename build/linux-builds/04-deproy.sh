@@ -28,18 +28,25 @@
 # ---------------------------------------------------------------------------
 # デプロイ先を用意する
 # ---------------------------------------------------------------------------
-cd ../..
-rm -rf ./deproy
-mkdir -p ./deproy
-mkdir -p ./deproy/include/wq
-mkdir -p ./deproy/lib/wq
-mkdir -p ./deproy/bin/wq
+
+cd `dirname $0`
+readonly OBJ_PATH=`pwd`
+readonly DEF_LOGPATH=${OBJ_PATH}/deproy
+readonly BASE_PATH=${OBJ_PATH}/../../
+
+rm -rf ${DEF_LOGPATH}
+mkdir -p ${DEF_LOGPATH}/
+mkdir -p ${DEF_LOGPATH}/include/wq
+mkdir -p ${DEF_LOGPATH}/lib/wq
+mkdir -p ${DEF_LOGPATH}/bin/wq
 
 # ---------------------------------------------------------------------------
 # コピーする
 # ---------------------------------------------------------------------------
-cp -pR src/*.h ./deproy/include/wq
-cp -pR libwq.linux.x86.a ./deproy/lib/wq
-cp -pR tools/logvewer/logviewr ./deproy/bin/wq
+cp -pR ${BASE_PATH}/include/* ${DEF_LOGPATH}/include/wq
+cp -pR ${BASE_PATH}/libs/generic/libwq.generic.linux.x86.a ${DEF_LOGPATH}/lib/wq
+cp -pR ${BASE_PATH}/libs/log/libwq.log.linux.x86.a ${DEF_LOGPATH}/lib/wq
+cp -pR ${BASE_PATH}/libs/wq/libwq.wq.linux.x86.a ${DEF_LOGPATH}/lib/wq
+cp -pR ${BASE_PATH}/libs/log/tools/logvewer/logviewr ${DEF_LOGPATH}/bin/wq
 
 

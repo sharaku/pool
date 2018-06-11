@@ -1,8 +1,9 @@
+#!/bin/sh
 # ----------------------------------------------------------------------------
 #
 #  MIT License
 #  
-#  Copyright (c) 2016 Abe Takafumi
+#  Copyright (c) 2017 Abe Takafumi
 #  
 #  Permission is hereby granted, free of charge, to any person obtaining a copy
 #  of this software and associated documentation files (the "Software"), to deal
@@ -22,48 +23,25 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE. *
 #
-#  System CMake file for libsharaku
 # ----------------------------------------------------------------------------
-cmake_minimum_required(VERSION 3.5)
 
-# ---------------------------------------------------------------
-include_directories(
-	../deproy/include/wq
-	)
-link_directories(
-	../deproy/lib/wq
-	)
+cd `dirname $0`
+readonly OBJ_PATH=`pwd`
+readonly DEF_LOGPATH=${OBJ_PATH}/result
+readonly BASE_PATH=${OBJ_PATH}/../../
 
-add_executable(sample-seqlock 
-	sample-seqlock.cpp
-	)
+mkdir -p ./result
 
-target_link_libraries(sample-seqlock
-	pthread
-	)
+# makeを行う
+#  arg1		ビルド対象
+do_build()
+{
+	lib_path=$1
 
-add_executable(sample-spinlock 
-	sample-spinlock.cpp
-	)
+	make clean -C ${lib_path} 2>&1
+	make -C ${lib_path} 2>&1
+}
 
-target_link_libraries(sample-spinlock
-	pthread
-	)
 
-add_executable(sample-wq 
-	sample-wq.c
-	)
-
-target_link_libraries(sample-wq
-	wq.linux.x86
-	pthread
-	)
-
-add_executable(sample-wqev 
-	sample-wqev.c
-	)
-
-target_link_libraries(sample-wqev
-	wq.linux.x86
-	pthread
-	)
+# testをビルド
+do_build ${BASE_PATH}libs/generic/test/linux

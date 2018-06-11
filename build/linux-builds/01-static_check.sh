@@ -25,44 +25,23 @@
 #
 # ----------------------------------------------------------------------------
 
-cd ../..
+cd `dirname $0`
+readonly OBJ_PATH=`pwd`
+readonly DEF_LOGPATH=${OBJ_PATH}/result
+readonly BASE_PATH=${OBJ_PATH}/../../
+
 mkdir -p ./result
 
-# x86-linuxビルドを行う
-do_libwq_x86_linux_build()
+# 静的チェックを行う
+#  arg1		ビルド対象
+do_src_cppcheck()
 {
-	rm -f CMakeCache.txt cmake_install.cmake rm Makefile
-	rm -rf CMakeFiles
-	cmake -DCMAKE_TOOLCHAIN_FILE=cmake/linux-x86.cmake
-	make 2>&1 | tee ./result/make.result.linux-x86
+	lib_path=$1
+	lib_name=`basename ${lib_path}`
+
+	cppcheck --enable=all --xml ${lib_path}/src 2> ${DEF_LOGPATH}/cppcheck.${lib_name}.xml
 }
 
-# example-x86-linuxビルドを行う
-do_example_x86_linux_build()
-{
-	cd example
-	rm -f CMakeCache.txt cmake_install.cmake rm Makefile
-	rm -rf CMakeFiles
-	cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/linux-x86.cmake
-	make 2>&1 | tee ./result/make.result.linux-x86
-}
-
-# example-x86-linuxビルドを行う
-do_tool_x86_linux_build()
-{
-	make clean -C ../logvewer/ 2>&1
-	make -C ../logvewer/ 2>&1
-}
-
-case $1 in
-	x86-linux )
-		do_libwq_x86_linux_build
-		;;
-	example-x86-linux )
-		do_example_x86_linux_build
-		;;
-	* )
-		do_tool_x86_linux_build
-		do_libwq_x86_linux_build
-		;;
-esac
+do_src_cppcheck ${BASE_PATH}libs/generic
+do_src_cppcheck ${BASE_PATH}libs/log
+do_src_cppcheck ${BASE_PATH}libs/wq

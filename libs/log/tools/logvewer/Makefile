@@ -9,8 +9,8 @@ TARGET   =logviewr
 SRC      =logvewer.c
 
 HEADERS  =
-INCLUDES =-I/usr/local/include/ -I../../src
-LDFLAGS  =-L/usr/local/lib/ -L../../
+INCLUDES =-I/usr/local/include/ -I../../../../include/
+LDFLAGS  =-L/usr/local/lib/
 LIBS     =
 
 all: $(TARGET)

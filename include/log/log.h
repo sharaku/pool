@@ -40,7 +40,7 @@
 // 
 
 
-#include <helper.h>
+#include <generic.h>
 
 CPP_SRC(extern "C" {)
 

@@ -26,54 +26,65 @@ SOFTWARE.
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <sys/time.h>
-#include <wq.h>
-#include <wq-event.h>
+#include <wq/wq.h>
 #include <pthread.h>
-#include <sys/eventfd.h>
+
+uint32_t count = 0;
+
+uint32_t old_us = 0;
+
+void *output(void *arg)
+{
+	printf("start thread. wq_run\n");
+	while(1);
+	wq_run();
+}
 
 static void
 timer_sched_cb(wq_item_t *item, wq_arg_t arg)
 {
-	uint64_t u = 1;
-	wq_ev_item_t	*item_ev = (wq_ev_item_t*)arg;
-	int efd = item_ev->id;
+	struct timeval tv;
+	uint32_t us;
 
-	write(efd, &u, sizeof(uint64_t));
-	printf("write !!\n");
-	wq_timer_sched(item, 1000, timer_sched_cb, arg);
+	wq_timer_sched(item, 100, timer_sched_cb, NULL);
+
+	gettimeofday(&tv, NULL);
+	us = tv.tv_sec * 1000000 + tv.tv_usec;
+	printf("<%-10u, %-10u>: %-10u\n", us, us - old_us, count);
+	old_us = us;
 }
 
 static void
-event_sched_cb(wq_item_t *item, wq_arg_t arg)
+sched_cb(wq_item_t *item, wq_arg_t arg)
 {
-	uint64_t u;
-	wq_ev_item_t	*item_ev = (wq_ev_item_t*)arg;
-	int efd = item_ev->id;
-
-	// イベントを受け取ったら出力して、もう一度イベント待ちにする。
-	read(efd, &u, sizeof(uint64_t));
-	printf("event !!\n");
-	wq_ev_sched(item_ev, event_sched_cb, (void*)item_ev);
+	count ++;
+	wq_sched(item, sched_cb, NULL);
 }
 
 int
 main(void)
 {
-	wq_ev_item_t	item_ev;
+	wq_item_t	item;
 	wq_item_t	item_timer;
-	int efd;
+	pthread_t	thread_id = 0;
 
-	// イベントFDを用意
-	efd = eventfd(0, 0);
+	printf("<now us    ,interval us>: count\n");
 
+	// 2つのタスクをスケジュールする。
+	wq_init_item(&item);
 	wq_init_item_prio(&item_timer, 0);
-	wq_timer_sched(&item_timer, 1000, timer_sched_cb, (void*)&item_ev);
+	printf("sched\n");
+	wq_sched(&item, sched_cb, NULL);
+	wq_sched(&item_timer, timer_sched_cb, NULL);
 
-	wq_ev_init(&item_ev, efd, WQ_EVFL_FDIN);
-	wq_ev_sched(&item_ev, event_sched_cb, (void*)&item_ev);
+	if (pthread_create(&thread_id, NULL, output, NULL) < 0) {
+		perror("pthread_create error");
+		exit(1);
+	} 
 
+	// 自信をworkerスレッドとする。
+	printf("wq_run\n");
 	wq_run();
 
 	return 0;

@@ -11,9 +11,9 @@ SRC      +=gtest_plist.cpp
 SRC      +=gtest_slab.cpp
 
 HEADERS  =
-INCLUDES =-I/usr/local/include/ -I../../src
+INCLUDES =-I/usr/local/include/ -I../../../../include/
 LDFLAGS  =-L/usr/local/lib/ -L../../
-LIBS     =-pthread -lgtest -lgtest_main -lwq.linux.x86
+LIBS     =-pthread -lgtest -lgtest_main -lwq.generic.linux.x86
 
 all: $(TARGET) test
 

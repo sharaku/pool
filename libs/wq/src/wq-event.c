@@ -22,8 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 **/
 #include <poll.h>
-#include <wq-event.h>
 #include <errno.h>
+#include <wq/wq-event.h>
 
 #define WQ_TRACELOG(fmt, ...)	printf("%s :"fmt"\n", __func__, __VA_ARGS__)
 

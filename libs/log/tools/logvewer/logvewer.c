@@ -35,7 +35,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
-#include <wq-log.h>
+#include <log/log.h>
 
 static int __log_mmap_fd;
 static int __bin_mmap_fd;

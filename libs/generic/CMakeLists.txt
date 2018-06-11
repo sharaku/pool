@@ -2,7 +2,7 @@
 #
 #  MIT License
 #  
-#  Copyright (c) 2016-2017 Abe Takafumi
+#  Copyright (c) 2016 Abe Takafumi
 #  
 #  Permission is hereby granted, free of charge, to any person obtaining a copy
 #  of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,7 @@ if(NOT CMAKE_TOOLCHAIN_FILE)
 	endif()
 endif(NOT CMAKE_TOOLCHAIN_FILE)
 
-include_directories(./src)
+include_directories(../../include)
 
 
 # コンパイラ引数
@@ -54,12 +54,10 @@ set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} ${CROSS_FLAGS_CXX}
 
 # ソース定義
 set(MODULE_SYSTEM
-	"src/wq.c"
 	"src/slab.c"
-	"src/wq-event.c"
-	"src/wq-log.c"
+	"src/timeofday.c"
 	)
-add_library(wq.${TARGET_SUFFIX} STATIC
+add_library(wq.generic.${TARGET_SUFFIX} STATIC
 	${MODULE_SYSTEM}
 	)
 

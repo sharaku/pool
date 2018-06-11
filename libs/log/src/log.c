@@ -28,7 +28,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <timeofday.h>
-#include "wq-log.h"
+#include <log/log.h>
 
 static struct wq_log_header *__wq_log;
 static struct wq_trace_type_info __wq_log_sys_info;

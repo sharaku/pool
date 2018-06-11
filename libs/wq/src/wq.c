@@ -22,12 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 **/
 
-#include "wq.h"
 #include <string.h>
 #include <errno.h>
 #include <timeofday.h>
 #include <stdio.h>
-#include "wq-log.h"
+#include <wq/wq.h>
+#include <log/log.h>
 
 
 #define WQ_TRACELOG(fmt, ...)	printf("%s :"fmt"\n", __func__ __VA_ARGS__)
@@ -46,10 +46,6 @@ SOFTWARE.
 
 #define	WQ_SET_CXFL_INIT(C)	((C)->flags |= WQ_CXFL_INIT)
 #define	WQ_SET_CXFL_STOP(C)	((C)->flags |= WQ_CXFL_STOP)
-
-// timeofday.h の実態定義
-int64_t	____generictime_usec = 0;
-int64_t	____generictime_msec = 0;
 
 typedef struct wq_ctx {
 	uint16_t	magic;

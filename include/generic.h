@@ -24,8 +24,8 @@
  *
  */
 
-#ifndef _WQ_HELPER_H
-#define _WQ_HELPER_H
+#ifndef _GENERIC_H
+#define _GENERIC_H
 
 #ifdef __cplusplus
 	#ifndef CPP_SRC
@@ -51,5 +51,7 @@
 #define __GET_FUNC5_NAME(_0, _1, _2, _3, _4, NAME, ...) NAME
 #define __GET_FUNC6_NAME(_0, _1, _2, _3, _4, _5, NAME, ...) NAME
 
+#define container_of(ptr, type, member) \
+      ((type *)(((char*)ptr) - offsetof(type, member)))
 
 #endif /* _WQ_HELPER_H */

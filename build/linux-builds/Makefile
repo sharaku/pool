@@ -26,6 +26,9 @@
 
 all: clean check build testing deproy
 
+clean:
+	sh 00-clear.sh
+
 check:
 	sh 01-static_check.sh
 
@@ -38,6 +41,3 @@ testing: build
 deproy: build
 	sh 04-deproy.sh
 
-
-clean:
-	sh 00-clear.sh
