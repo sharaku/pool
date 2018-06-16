@@ -47,7 +47,8 @@ timer_sched_cb(wq_item_t *item, wq_arg_t arg)
 	struct timeval tv;
 	uint32_t us;
 
-	wq_timer_sched(item, 100, timer_sched_cb, NULL);
+	// 50.25ms周期で動かす
+	wq_timer_sched(item, WQ_TIME_US(50250), timer_sched_cb, NULL);
 
 	gettimeofday(&tv, NULL);
 	us = tv.tv_sec * 1000000 + tv.tv_usec;

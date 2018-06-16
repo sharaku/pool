@@ -54,4 +54,14 @@
 #define container_of(ptr, type, member) \
       ((type *)(((char*)ptr) - offsetof(type, member)))
 
+
+#ifdef __GNUC__
+#define likely(x)      __builtin_expect(!!(x), 1)
+#define unlikely(x)    __builtin_expect(!!(x), 0)
+#elif _WIN32
+#define likely(x)
+#define unlikely(x)
+#endif
+
+
 #endif /* _WQ_HELPER_H */

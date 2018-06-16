@@ -42,7 +42,7 @@ timer_sched_cb(wq_item_t *item, wq_arg_t arg)
 
 	write(efd, &u, sizeof(uint64_t));
 	printf("write !!\n");
-	wq_timer_sched(item, 1000, timer_sched_cb, arg);
+	wq_timer_sched(item, WQ_TIME_MS(1000), timer_sched_cb, arg);
 }
 
 static void
@@ -69,7 +69,7 @@ main(void)
 	efd = eventfd(0, 0);
 
 	wq_init_item_prio(&item_timer, 0);
-	wq_timer_sched(&item_timer, 1000, timer_sched_cb, (void*)&item_ev);
+	wq_timer_sched(&item_timer, WQ_TIME_MS(1000), timer_sched_cb, (void*)&item_ev);
 
 	wq_ev_init(&item_ev, efd, WQ_EVFL_FDIN);
 	wq_ev_sched(&item_ev, event_sched_cb, (void*)&item_ev);

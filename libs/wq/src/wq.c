@@ -29,12 +29,6 @@ SOFTWARE.
 #include <wq/wq.h>
 #include <log/log.h>
 
-
-#define WQ_TRACELOG(fmt, ...)	printf("%s :"fmt"\n", __func__ __VA_ARGS__)
-
-
-#define	WQ_TV2MSEC(TV)	(TV.tv_sec * 1000 + TV.tv_usec / 1000)
-
 #ifdef WQ_ASSERT_ENABLE
 	#define WQ_ASSERT(x) assert((x));
 #else
@@ -63,7 +57,7 @@ typedef struct wq_ctx {
 	// default = 128
 	struct plist_head	sched_plist;
 	// 時間順のjobリスト
-	// 起動時の時間を0として、経過msで登録する。
+	// 起動時の時間を0として、経過usで登録する。
 	struct plist_head	timer_plist;
 
 	seqlock_t	attr_lock;
@@ -99,7 +93,7 @@ __wq_constructor(void)
 	generic_upd_generictime();
 	init_mutex_lock(&__ctx.task_lock);
 	init_mutex_cond(&__ctx.task_cond);
-	__ctx.base_time = generic_get_msec_fast();
+	__ctx.base_time = generic_get_usec_fast();
 	WQ_SET_CXFL_INIT(&__ctx);
 	mb();
 	return;
@@ -127,7 +121,7 @@ __do_sched_timer(void)
 	write_seqlock(&ctx->timer_lock);
 	plist_for_each_entry_safe(item, n, &ctx->timer_plist,
 					 wq_item_t, node) {
-		if (item->milli_sec > ctx->base_time) {
+		if (item->usec > ctx->base_time) {
 			break;
 		}
 		item->stat = WQ_STAT_SUSPEND;
@@ -198,19 +192,19 @@ __wq_worker(void *arg)
 
 	for (;;) {
 		int ret;
-		int64_t ms;
+		int64_t us;
 
 		// 停止指示の場合は終了する
 		if (WQ_IS_CXFL_STOP(ctx)) {
 			break;
 		}
 
-		// ms単位で変化がない場合は何もしない。
+		// us単位で変化がない場合は何もしない。
 		generic_upd_generictime();
-		ms = generic_get_msec_fast();
-		if (ms != ctx->base_time) {
+		us = generic_get_usec_fast();
+		if (us != ctx->base_time) {
 			write_seqlock(&ctx->attr_lock);
-			ctx->base_time = ms;
+			ctx->base_time = us;
 			write_sequnlock(&ctx->attr_lock);
 
 			__do_sched_timer();
@@ -323,7 +317,7 @@ __push_timer(wq_item_t *item)
 		goto end;
 	}
 
-	item->node.prio = item->milli_sec;
+	item->node.prio = item->usec;
 
 	// キューに積む
 	plist_add(&(item->node), &(ctx->timer_plist));
@@ -360,7 +354,7 @@ wq_sched(wq_item_t *item, wq_stage_t cb, wq_arg_t arg)
 	item->stat	= WQ_STAT_READY;
 	item->stage 	= cb;
 	item->arg 	= arg;
-	item->milli_sec	= 0;
+	item->usec	= 0;
 
 	// スケジューラの末尾へ登録後、待ち合わせているスケジューラを起動する
 	// singleスケジューラの場合はこの起動に意味はなく、処理がスケジューラへ
@@ -370,7 +364,7 @@ wq_sched(wq_item_t *item, wq_stage_t cb, wq_arg_t arg)
 }
 
 int
-wq_timer_sched(wq_item_t *item, wq_msec_t ms, wq_stage_t cb, wq_arg_t *arg)
+wq_timer_sched(wq_item_t *item, wq_usec_t us, wq_stage_t cb, wq_arg_t *arg)
 {
 	wq_ctx_t	*ctx = &__ctx;
 
@@ -378,7 +372,7 @@ wq_timer_sched(wq_item_t *item, wq_msec_t ms, wq_stage_t cb, wq_arg_t *arg)
 	item->stat	= WQ_STAT_WAIT;
 	item->stage 	= cb;
 	item->arg 	= arg;
-	item->milli_sec	= ctx->base_time + ms;
+	item->usec	= ctx->base_time + us;
 
 	// スケジューラの末尾へ登録後、待ち合わせているスケジューラを起動する
 	// singleスケジューラの場合はこの起動に意味はなく、処理がスケジューラへ

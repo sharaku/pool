@@ -99,7 +99,7 @@ CPP_SRC(extern "C" {)
 
 struct wq_item;
 typedef void *wq_arg_t;
-typedef uint32_t wq_msec_t;
+typedef uint32_t wq_usec_t;
 typedef void(*wq_stage_t)(struct wq_item*, wq_arg_t);
 
 #define WQ_DEFAULT_PRIO (128)
@@ -113,7 +113,7 @@ typedef struct wq_item {
 	struct plist_node	node;		///< スケジューラのノード
 	wq_stage_t		stage;
 	wq_arg_t		arg;
-	int64_t			milli_sec;	///< タイムアウト値
+	int64_t			usec;		///< タイムアウト値
 	int16_t			prio;		///< 優先度
 	uint8_t			is_timeout:1;	///< タイムアウトしているか
 	uint8_t			rsv_flg:7;	///< 
@@ -165,8 +165,11 @@ wq_init_item_prio(wq_item_t *item, int16_t prio)
 }
 //extern void wq_set_prio(wq_item_t *item, int16_t prio);
 extern int wq_sched(wq_item_t *item, wq_stage_t cb, wq_arg_t arg);
-extern int wq_timer_sched(wq_item_t *item, wq_msec_t ms, wq_stage_t cb, wq_arg_t *arg);
+extern int wq_timer_sched(wq_item_t *item, wq_usec_t us, wq_stage_t cb, wq_arg_t *arg);
 //extern void wq_cancel(wq_item_t *);
+
+#define WQ_TIME_MS(ms)	((ms) * 1000)
+#define WQ_TIME_US(us)	(us)
 
 CPP_SRC(})
 
