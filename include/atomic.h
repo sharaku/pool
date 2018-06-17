@@ -45,27 +45,22 @@ CPP_SRC(extern "C" {)
 #ifdef __GNUC__
 // gccにおけるatomic
 static inline void
-__mb_gcc(void)
+mb(void)
 {
 	__sync_synchronize();
 }
+#include <arch/gcc/atomic.h>
+
 #elif _WIN32
 static inline void
-__mb_win32(void)
+mb(void)
 {
 	_ReadWriteBarrier();
 }
+#include <arch/vc/atomic.h>
 
-#define mb() __mb_win32()
 #else
 #error "It is an incompatible build environment."
-#endif
-
-
-#ifdef __GNUC__
-#define mb() __mb_gcc()
-#elif _WIN32
-#define mb() __mb_win32()
 #endif
 
 CPP_SRC(})

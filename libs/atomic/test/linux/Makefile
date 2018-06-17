@@ -4,16 +4,14 @@
 
 CC       =g++
 CFLAGS   =-Wall -ansi -pedantic -g
-TARGET   =libwq.generic-unittest
+TARGET   =libwq.atomic-unittest
 
-SRC      =gtest_list.cpp
-SRC      +=gtest_plist.cpp
-SRC      +=gtest_slab.cpp
+SRC      =gtest_atomic.cpp
 
 HEADERS  =
 INCLUDES =-I/usr/local/include/ -I../../../../include/
 LDFLAGS  =-L/usr/local/lib/ -L../../
-LIBS     =-pthread -lgtest -lgtest_main -lwq.generic.linux.x86
+LIBS     =-pthread -lgtest -lgtest_main
 
 all: $(TARGET) test
 
@@ -24,4 +22,4 @@ clean:
 	rm -f $(TARGET)
 
 test: $(TARGET)
-	./$(TARGET) --gtest_output=xml:gtest_result.generic.linux-x86.xml
+	./$(TARGET) --gtest_output=xml:gtest_result.atomic.linux-x86.xml
