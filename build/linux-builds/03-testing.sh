@@ -46,3 +46,5 @@ do_build()
 # test‚ðƒrƒ‹ƒh
 do_build ${BASE_PATH}libs/generic/test/linux
 do_build ${BASE_PATH}libs/atomic/test/linux
+do_build ${BASE_PATH}libs/pid/test/linux
+do_build ${BASE_PATH}libs/bit/test/linux
