@@ -112,7 +112,7 @@ __wq_ev_polltimer_linux(struct wq_item *item, wq_arg_t argv)
 }
 
 int
-wq_ev_sched(wq_ev_item_t *ev_item, wq_stage_t cb, wq_arg_t *arg)
+wq_ev_sched(wq_ev_item_t *ev_item, wq_stage_t cb, wq_arg_t arg)
 {
 	int rc;
 	struct epoll_event ev;

@@ -34,3 +34,18 @@ readonly BASE_PATH=${OBJ_PATH}/../../
 
 rm -rf ${DEF_LOGPATH}
 rm -rf ${DEF_DEPROYPATH}
+
+if [ -f ${BASE_PATH}libs/generic/Makefile ]; then
+	# libをクリア
+	make -C ${BASE_PATH}libs/generic clean
+	make -C ${BASE_PATH}libs/log clean
+	make -C ${BASE_PATH}libs/wq clean
+	make -C ${BASE_PATH}libs/devfile clean
+
+	# ツールをクリア
+	make -C ${BASE_PATH}libs/log/tools/logvewer/ clean
+
+	# サンプルをクリア
+	make -C ${BASE_PATH}libs/generic/example clean
+	make -C ${BASE_PATH}libs/wq/example clean
+fi

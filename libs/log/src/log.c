@@ -30,7 +30,7 @@
 #include <timeofday.h>
 #include <log/log.h>
 
-static struct wq_log_header *__wq_log;
+static struct wq_log_header *__wq_log = NULL;
 static struct wq_trace_type_info __wq_log_sys_info;
 
 #ifdef __linux__
@@ -102,6 +102,11 @@ __wq_trace_internal(const char *func, uint16_t line, int8_t arg0)
 	uint32_t idx = 0;
 	struct wq_trace *info = NULL;
 
+	if (!__wq_log) {
+		// 初期化前ならログをとれない。
+		return;
+	}
+
 	idx = __wq_log_sys_info.header->head_idx;
 	__wq_infolog_internal_idxadd(WQ_LOG_BLKS(struct wq_trace));
 	info = (struct wq_trace*)(__wq_log_sys_info.log_top + idx * WQ_SYSINFO_LOG_BASE_SZ);
@@ -115,6 +120,11 @@ __wq_infolog_internal_wq_log64_32(const char *fmt, const char *func,
 {
 	uint32_t idx = 0;
 	struct wq_log64_32 *info = NULL;
+
+	if (!__wq_log) {
+		// 初期化前ならログをとれない。
+		return;
+	}
 
 	idx = __wq_log_sys_info.header->head_idx;
 	__wq_infolog_internal_idxadd(WQ_LOG_BLKS(struct wq_log64_32));
@@ -131,6 +141,11 @@ __wq_infolog_internal_wq_log64_64(const char *fmt, const char *func, uint16_t li
 {
 	uint32_t idx = 0;
 	struct wq_log64_64 *info = NULL;
+
+	if (!__wq_log) {
+		// 初期化前ならログをとれない。
+		return;
+	}
 
 	idx = __wq_log_sys_info.header->head_idx;
 	__wq_infolog_internal_idxadd(WQ_LOG_BLKS(struct wq_log64_64));

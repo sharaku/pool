@@ -93,7 +93,7 @@ wq_ev_init_item_prio(wq_ev_item_t *ev_item, int id, int flg, int16_t prio)
 	__wq_ev_init(ev_item, id, flg);
 }
 
-extern int wq_ev_sched(wq_ev_item_t *item, wq_stage_t cb, wq_arg_t *arg);
+extern int wq_ev_sched(wq_ev_item_t *item, wq_stage_t cb, wq_arg_t arg);
 extern int wq_ev_cancel(wq_ev_item_t *item);
 
 CPP_SRC(})

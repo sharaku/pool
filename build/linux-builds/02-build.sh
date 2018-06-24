@@ -81,12 +81,12 @@ do_build()
 do_lib_build ${BASE_PATH}libs/generic linux-x86
 do_lib_build ${BASE_PATH}libs/log linux-x86
 do_lib_build ${BASE_PATH}libs/wq linux-x86
+do_lib_build ${BASE_PATH}libs/devfile linux-x86
 
 # ツールをビルド
 do_build ${BASE_PATH}libs/log/tools/logvewer/
 
 # サンプルをビルド
 do_example_build ${BASE_PATH}libs/generic linux-x86
-do_example_build ${BASE_PATH}libs/log linux-x86
 do_example_build ${BASE_PATH}libs/wq linux-x86
 

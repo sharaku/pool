@@ -47,6 +47,7 @@ cp -pR ${BASE_PATH}/include/* ${DEF_LOGPATH}/include/wq
 cp -pR ${BASE_PATH}/libs/generic/libwq.generic.linux.x86.a ${DEF_LOGPATH}/lib/wq
 cp -pR ${BASE_PATH}/libs/log/libwq.log.linux.x86.a ${DEF_LOGPATH}/lib/wq
 cp -pR ${BASE_PATH}/libs/wq/libwq.wq.linux.x86.a ${DEF_LOGPATH}/lib/wq
+cp -pR ${BASE_PATH}/libs/devfile/libwq.devfile.linux.x86.a ${DEF_LOGPATH}/lib/wq
 cp -pR ${BASE_PATH}/libs/log/tools/logvewer/logviewr ${DEF_LOGPATH}/bin/wq
 
 
