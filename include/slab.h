@@ -158,10 +158,16 @@ extern int slab_destroy(struct slab_cache *slab);
 // スラブからメモリを獲得する。
 extern void* _slab_alloc(struct slab_cache *slab,
 				   const char *src, uint32_t line);
-// スラブから獲得したメモリを開放する。
+// スラブから獲得したメモリを開放する。(参照カウント無視)
 extern int slab_free(void *buf);
 #define slab_alloc(slab)	\
 		_slab_alloc(slab, __FILE__, __LINE__)
+
+// スラブの参照カウントを加算する。
+extern int slab_get(void *buf);
+
+// スラブから獲得したメモリの参照カウントを減算する。
+extern int slab_put(void *buf);
 
 static inline void
 slab_set_constructor(struct slab_cache *slab, slab_constructor constructor)

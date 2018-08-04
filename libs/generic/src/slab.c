@@ -27,14 +27,15 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <slab.h>
+#include <atomic.h>
 
 #define _SLAB_MAGIC	0xF324ABE3
 // メモリバッファのヘッダ。
 // 利用者からは参照できない領域
 typedef struct smem_header {
 	uint32_t		h_magic;
-	uint32_t		h_line;
-	const char		*h_src;
+	uint16_t		h_refcnt;
+	uint16_t		h_rsv;
 	struct slab_node	*h_node;
 	struct list_head	h_list;
 } smem_header_t;
@@ -42,6 +43,9 @@ typedef struct smem_header {
 // メモリバッファのフッタ。
 // 利用者からは参照できない領域
 typedef struct mem_footer {
+	const char		*f_src;
+	uint16_t		f_line;
+	uint16_t		f_rsv;
 	uint32_t		f_magic;
 } smem_footer_t;
 
@@ -113,11 +117,12 @@ __slab_alloc(struct slab_node *node,
 	list_del_init(&h->h_list);
 	list_add_tail(&h->h_list, &node->sn_alist);
 	h->h_magic = _SLAB_MAGIC;
-	h->h_src = src;
-	h->h_line = line;
+	h->h_refcnt = 1;
 	h->h_node = node;
 
 	f = __slab_h2f(h);
+	f->f_src = src;
+	f->f_line = line;
 	f->f_magic = _SLAB_MAGIC;
 
 	node->sn_alloc_cnt++;
@@ -273,6 +278,61 @@ slab_free(void *buf)
 		__slab_resched(node->sn_slab, node);
 	}
 	return 0;
+}
+
+int
+slab_get(void *buf)
+{
+	struct slab_node *node;
+	smem_header_t *h;
+
+	if (!buf) {
+		// 不正アクセス。
+		return -EFAULT;
+	}
+	h = __slab_b2h(buf);
+	if (h->h_magic != _SLAB_MAGIC) {
+		// 不正アクセス。
+		return -EFAULT;
+	}
+	node = h->h_node;
+	if (!node) {
+		// 不正アクセス。
+		return -EFAULT;
+	}
+
+	mb();
+	h->h_refcnt++;
+	return h->h_refcnt;
+}
+
+int
+slab_put(void *buf)
+{
+	struct slab_node *node;
+	smem_header_t *h;
+
+	if (!buf) {
+		// 不正アクセス。
+		return -EFAULT;
+	}
+	h = __slab_b2h(buf);
+	if (h->h_magic != _SLAB_MAGIC) {
+		// 不正アクセス。
+		return -EFAULT;
+	}
+	node = h->h_node;
+	if (!node) {
+		// 不正アクセス。
+		return -EFAULT;
+	}
+
+	mb();
+	h->h_refcnt--;
+	if (!h->h_refcnt) {
+		slab_free(buf);
+	}
+	return h->h_refcnt;
 }
 
 struct slab_cache*
