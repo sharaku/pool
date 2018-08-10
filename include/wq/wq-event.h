@@ -59,42 +59,52 @@ typedef struct wq_ev_item_linux {
 	uint32_t		events;
 	wq_item_t		item;
 } wq_ev_item_t;
-#define WQ_EVFL_FDIN	(0x8000)
-#define WQ_EVFL_FDOUT	(0x4000)
+#define WQ_EVFL_FDIN	(EPOLLIN)
+#define WQ_EVFL_FDOUT	(EPOLLOUT)
+#define WQ_EVFL_FDERR	(EPOLLERR)
+
+extern int wq_ev_create(wq_ev_item_t *ev_item);
 
 // event itemを初期化する。
 // id はイベント識別子
 // flg はイベントのフラグ
-static inline void
-__wq_ev_init(wq_ev_item_t *ev_item, int id, int flg)
+static inline int
+__wq_ev_init(wq_ev_item_t *ev_item, int id)
 {
-	if (flg & WQ_EVFL_FDIN) {
-		ev_item->events |= EPOLLIN;
-	}
-	if (flg & WQ_EVFL_FDOUT) {
-		ev_item->events |= EPOLLOUT;
-	}
 	ev_item->id = id;
+	return wq_ev_create(ev_item);
 }
 
-static inline void
-wq_ev_init(wq_ev_item_t *ev_item, int id, int flg)
+static inline int
+wq_ev_init(wq_ev_item_t *ev_item, int id)
 {
 	memset(ev_item, 0, sizeof *ev_item);
 	wq_init_item(&(ev_item->item));
-	__wq_ev_init(ev_item, id, flg);
+	return __wq_ev_init(ev_item, id);
 }
 
-static inline void
-wq_ev_init_item_prio(wq_ev_item_t *ev_item, int id, int flg, int16_t prio)
+static inline int
+wq_ev_init_item_prio(wq_ev_item_t *ev_item, int id, int16_t prio)
 {
 	memset(ev_item, 0, sizeof *ev_item);
 	wq_init_item_prio(&(ev_item->item), prio);
-	__wq_ev_init(ev_item, id, flg);
+	return __wq_ev_init(ev_item, id);
 }
 
-extern int wq_ev_sched(wq_ev_item_t *item, wq_stage_t cb, wq_arg_t arg);
+extern int wq_ev_destroy(wq_ev_item_t *ev_item);
+extern int wq_ev_sched(wq_ev_item_t *ev_item, int flg, wq_stage_t cb);
 extern int wq_ev_cancel(wq_ev_item_t *item);
+
+inline void *
+wq_get_evitem_arg(wq_ev_item_t *ev_item)
+{
+	return ev_item->item.arg;
+}
+inline void
+wq_set_evitem_arg(wq_ev_item_t *ev_item, void *arg)
+{
+	ev_item->item.arg = arg;
+}
 
 CPP_SRC(})
 

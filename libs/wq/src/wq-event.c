@@ -24,8 +24,7 @@ SOFTWARE.
 #include <poll.h>
 #include <errno.h>
 #include <wq/wq-event.h>
-
-#define WQ_TRACELOG(fmt, ...)	printf("%s :"fmt"\n", __func__, __VA_ARGS__)
+#include <log/log.h>
 
 // コンテキスト
 static struct wq_ev_ctx_linux {
@@ -59,7 +58,8 @@ __wq_ev_poll_generic_linux(void)
 {
 	int i;
 	int nfds;
-	struct epoll_event ev, ev_ret[WQ_EV_POLL_MAX];
+	uint32_t events;
+	struct epoll_event ev_ret[WQ_EV_POLL_MAX];
 
 	if (__ev_ctx.cnt) {
 		// epoll中は登録禁止
@@ -69,15 +69,17 @@ __wq_ev_poll_generic_linux(void)
 		for (i = 0; i < nfds; i++) {
 			wq_ev_item_t *ev_item = NULL;
 			ev_item = (wq_ev_item_t *)ev_ret[i].data.ptr;
-			// イベントのあったitemをスケジュールする。
-			// fdは対象から外しておく。こうすることで
-			// スケジュール先が先に動いた場合でも正しく動ける。
-			epoll_ctl(__ev_ctx.epfd,
-				  EPOLL_CTL_DEL, ev_item->id, &(ev_ret[i]));
+			ev_item->events = ev_ret[i].events;
+
+			// EPOLLONESHOT指定のため、ここに来る場合は、
+			// 破棄された状態。
+			spin_lock(&(__ev_ctx.lock));
+			__ev_ctx.cnt--;
+			spin_unlock(&(__ev_ctx.lock));
 
 			wq_sched(&(ev_item->item),
 				 ev_item->item.stage,
-				 ev_item->item.arg);
+				 ev_item);
 		}
 		spin_unlock(&(__ev_ctx.epoll_lock));
 	}
@@ -111,44 +113,71 @@ __wq_ev_polltimer_linux(struct wq_item *item, wq_arg_t argv)
 	spin_unlock(&(__ev_ctx.lock));
 }
 
+// イベントを生成する
 int
-wq_ev_sched(wq_ev_item_t *ev_item, wq_stage_t cb, wq_arg_t arg)
+wq_ev_create(wq_ev_item_t *ev_item)
 {
 	int rc;
 	struct epoll_event ev;
 
-	ev_item->item.stage = cb;
-	ev_item->item.arg = arg;
-
-	ev.events = ev_item->events;
+	ev.events = 0;
 	ev.data.fd = ev_item->id;
+	ev.data.ptr = (void*)ev_item;
 
-	// 新規にepoll登録する
-	// もし、イベント数が0から1になった場合はIDLE時のイベントと1msごとの
-	// イベントを起動する。
 	spin_lock(&(__ev_ctx.epoll_lock));
 	rc = epoll_ctl(__ev_ctx.epfd, EPOLL_CTL_ADD,
 		       ev_item->id, &ev);
 	if (rc != 0) {
 		spin_unlock(&(__ev_ctx.epoll_lock));
-		WQ_TRACELOG("epoll_ctl ADD error. errno=%d", errno);
+		wq_infolog64("epoll_ctl ADD error. errno=%d", errno);
 		return -errno;
 	}
+	spin_unlock(&(__ev_ctx.epoll_lock));
+	return 0;
+}
+
+// イベントを破棄する。
+int
+wq_ev_destroy(wq_ev_item_t *ev_item)
+{
+	spin_lock(&(__ev_ctx.epoll_lock));
+	epoll_ctl(__ev_ctx.epfd, EPOLL_CTL_DEL, ev_item->id, NULL);
+	spin_unlock(&(__ev_ctx.epoll_lock));
+	return 0;
+}
+
+int
+wq_ev_sched(wq_ev_item_t *ev_item, int flg, wq_stage_t cb)
+{
+	int rc;
+	struct epoll_event ev;
+
+	spin_lock(&(__ev_ctx.epoll_lock));
+	ev_item->item.stage = cb;
+	ev_item->events = flg;
+	ev_item->events |= EPOLLONESHOT;
+
+	ev.events = ev_item->events;
+	ev.data.fd = ev_item->id;
 	ev.data.ptr = (void*)ev_item;
+
+	// 新規にepoll登録する
+	// もし、イベント数が0から1になった場合はIDLE時のイベントと1msごとの
+	// イベントを起動する。
 	rc = epoll_ctl(__ev_ctx.epfd, EPOLL_CTL_MOD,
 		       ev_item->id, &ev);
 	if (rc != 0) {
 		spin_unlock(&(__ev_ctx.epoll_lock));
-		WQ_TRACELOG("epoll_ctl ADD error. errno=%d", errno);
+		wq_infolog64("epoll_ctl ADD error. errno=%d", errno);
 		return -errno;
 	}
 
 	spin_lock(&(__ev_ctx.lock));
 	if (__ev_ctx.cnt == 0) {
 		wq_sched(&(__ev_ctx.item),
-			 __wq_ev_poll_linux, arg);
+			 __wq_ev_poll_linux, NULL);
 		wq_timer_sched(&(__ev_ctx.item_timer), 1,
-			       __wq_ev_polltimer_linux, arg);
+			       __wq_ev_polltimer_linux, NULL);
 	}
 	__ev_ctx.cnt++;
 	spin_unlock(&(__ev_ctx.lock));

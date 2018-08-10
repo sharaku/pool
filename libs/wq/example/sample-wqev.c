@@ -55,7 +55,7 @@ event_sched_cb(wq_item_t *item, wq_arg_t arg)
 	// イベントを受け取ったら出力して、もう一度イベント待ちにする。
 	read(efd, &u, sizeof(uint64_t));
 	printf("event !!\n");
-	wq_ev_sched(item_ev, event_sched_cb, (void*)item_ev);
+	wq_ev_sched(item_ev, WQ_EVFL_FDIN, event_sched_cb);
 }
 
 int
@@ -71,8 +71,8 @@ main(void)
 	wq_init_item_prio(&item_timer, 0);
 	wq_timer_sched(&item_timer, WQ_TIME_MS(1000), timer_sched_cb, (void*)&item_ev);
 
-	wq_ev_init(&item_ev, efd, WQ_EVFL_FDIN);
-	wq_ev_sched(&item_ev, event_sched_cb, (void*)&item_ev);
+	wq_ev_init(&item_ev, efd);
+	wq_ev_sched(&item_ev, WQ_EVFL_FDIN, event_sched_cb);
 
 	wq_run();
 

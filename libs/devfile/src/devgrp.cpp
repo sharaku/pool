@@ -91,8 +91,9 @@ devgrp::__read_submit(void)
 		}
 		rc = _devices[bit]->update();
 		if (unlikely(rc == EAGAIN)) {
-			wq_ev_init(&_item_ev, _devices[bit]->get_id(), WQ_EVFL_FDIN);
-			wq_ev_sched(&_item_ev, devgrp::__io_event, (void*)this);
+			wq_ev_init(&_item_ev, _devices[bit]->get_id());
+			wq_set_evitem_arg(&_item_ev, (void*)this);
+			wq_ev_sched(&_item_ev, WQ_EVFL_FDIN, devgrp::__io_event);
 			wq_infolog64("update retryed. rc=%d", rc);
 			break;
 		} else if (unlikely(rc != 0)) {
@@ -129,8 +130,9 @@ devgrp::__write_submit(void)
 		}
 		rc = _devices[bit]->commit();
 		if (unlikely(rc == EAGAIN)) {
-			wq_ev_init(&_item_ev, _devices[bit]->get_id(), WQ_EVFL_FDOUT);
-			wq_ev_sched(&_item_ev, devgrp::__io_event, (void*)this);
+			wq_ev_init(&_item_ev, _devices[bit]->get_id());
+			wq_set_evitem_arg(&_item_ev, (void*)this);
+			wq_ev_sched(&_item_ev, WQ_EVFL_FDOUT, devgrp::__io_event);
 			wq_infolog64("commit retryed. rc=%d", rc);
 			break;
 		} else if (unlikely(rc != 0)) {
@@ -191,7 +193,8 @@ devgrp::__submit(void)
 void
 devgrp::__io_event(struct wq_item *item, wq_arg_t arg)
 {
-	devgrp *_this = (devgrp *)arg;
+	wq_ev_item_t *ev_item = (wq_ev_item_t *)arg;
+	devgrp *_this = (devgrp *)wq_get_evitem_arg(ev_item);
 	_this->__submit();
 }
 
