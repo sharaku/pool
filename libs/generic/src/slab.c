@@ -176,7 +176,11 @@ __slab_node_alloc(struct slab_cache *slab)
 	unsigned int i;
 
 	buf_sz = slab->s_size + sizeof(smem_header_t) + sizeof(smem_footer_t);
-	node = (struct slab_node *)malloc(slab->s_node_size);
+	if (slab->s_mem_alloc) {
+		node = (struct slab_node *)slab->s_mem_alloc(slab->s_node_size);
+	} else {
+		node = (struct slab_node *)malloc(slab->s_node_size);
+	}
 
 	init_plist_node(&node->sn_plist, 0);
 	init_list_head(&node->sn_alist);
@@ -200,6 +204,18 @@ __slab_node_alloc(struct slab_cache *slab)
 	__slab_resched(slab, node);
 
 	slab->s_node_cnt++;
+}
+
+// slab獲得の優先度キューの再登録を行う。
+static inline void
+__slab_node_free(struct slab_cache *slab, struct slab_node *node)
+{
+	plist_del(&node->sn_plist, &slab->s_list);
+	if (slab->s_mem_free) {
+		slab->s_mem_free(node);
+	} else {
+		free(node);
+	}
 }
 
 // slabからメモリを獲得する。
@@ -273,9 +289,16 @@ slab_free(void *buf)
 	if (rc) {
 		return rc;
 	}
-	// もしslabの獲得により優先度に変化が発生した時は、nodeを入れなおす。
-	if (prio != __get_slab_prio(node)) {
-		__slab_resched(node->sn_slab, node);
+	if (!node->sn_alloc_cnt) {
+		// カウンタが0であれば、すべて開放済み。
+		// よってnodeを破棄する。
+		__slab_node_free(node->sn_slab, node);
+	} else {
+		// もしslabの獲得により優先度に変化が発生した時は、
+		// nodeを入れなおす。
+		if (prio != __get_slab_prio(node)) {
+			__slab_resched(node->sn_slab, node);
+		}
 	}
 	return 0;
 }
@@ -303,6 +326,30 @@ slab_get(void *buf)
 
 	mb();
 	h->h_refcnt++;
+	return h->h_refcnt;
+}
+
+int
+slab_get_refcnt(void *buf)
+{
+	struct slab_node *node;
+	smem_header_t *h;
+
+	if (!buf) {
+		// 不正アクセス。
+		return -EFAULT;
+	}
+	h = __slab_b2h(buf);
+	if (h->h_magic != _SLAB_MAGIC) {
+		// 不正アクセス。
+		return -EFAULT;
+	}
+	node = h->h_node;
+	if (!node) {
+		// 不正アクセス。
+		return -EFAULT;
+	}
+
 	return h->h_refcnt;
 }
 

@@ -76,28 +76,28 @@ struct wq_log_header
 
 // 16byte
 struct wq_trace {
-	const char	*func;
-	uint32_t	usec;
-	uint16_t	line;
-	uint8_t		type;
-	uint8_t		u8;
+	const char	*func;		// 0x00
+	uint32_t	usec;		// 0x08
+	uint16_t	line;		// 0x0c
+	uint8_t		type;		// 0x0e
+	uint8_t		u8;		// 0x0f
 };
 
 
 // 64byte
 struct wq_log64_64
 {
-	struct wq_trace	header;
-	const char	*format;
-	int64_t		arg[5];
+	struct wq_trace	header;		// 0x00
+	const char	*format;	// 0x10
+	int64_t		arg[5];		// 0x18 - 0x40
 };
 
 // 32byte
 struct wq_log64_32
 {
-	struct wq_trace	header;
-	const char	*format;
-	int64_t		arg[1];
+	struct wq_trace	header;		// 0x00
+	const char	*format;	// 0x10
+	int64_t		arg[1];		// 0x18 - 0x20
 };
 
 union __wq_log
@@ -115,15 +115,15 @@ extern void __wq_infolog_internal_wq_log64_64(const char *fmt, const char *func,
 #define ____infolog64_0( func, line, fmt) \
 		__wq_infolog_internal_wq_log64_32(fmt, func, line, 0)
 #define ____infolog64_1(func, line, fmt, a1) \
-		__wq_infolog_internal_wq_log64_32(fmt, func, line, a1)
+		__wq_infolog_internal_wq_log64_32(fmt, func, line, (int64_t)a1)
 #define ____infolog64_2(func, line, fmt, a1, a2) \
-		__wq_infolog_internal_wq_log64_64(fmt, func, line, a1, a2, 0, 0, 0)
+		__wq_infolog_internal_wq_log64_64(fmt, func, line, (int64_t)a1, (int64_t)a2, 0, 0, 0)
 #define ____infolog64_3(func, line, fmt, a1, a2, a3) \
-		__wq_infolog_internal_wq_log64_64(fmt, func, line, a1, a2, a3, 0, 0)
+		__wq_infolog_internal_wq_log64_64(fmt, func, line, (int64_t)a1, (int64_t)a2, (int64_t)a3, 0, 0)
 #define ____infolog64_4(func, line, fmt, a1, a2, a3, a4) \
-		__wq_infolog_internal_wq_log64_64(fmt, func, line, a1, a2, a3, a4, 0)
+		__wq_infolog_internal_wq_log64_64(fmt, func, line, (int64_t)a1, (int64_t)a2, (int64_t)a3, (int64_t)a4, 0)
 #define ____infolog64_5(func, line, fmt, a1, a2, a3, a4, a5) \
-		__wq_infolog_internal_wq_log64_64(fmt, func, line, a1, a2, a3, a4, a5)
+		__wq_infolog_internal_wq_log64_64(fmt, func, line, (int64_t)a1, (int64_t)a2, (int64_t)a3, (int64_t)a4, (int64_t)a5)
 #define ____infolog64(...)		\
 	__GET_FUNC6_NAME(__VA_ARGS__, ____infolog64_5, ____infolog64_4, ____infolog64_3,	\
 			  ____infolog64_2, ____infolog64_1, ____infolog64_0)			\

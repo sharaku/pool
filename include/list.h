@@ -288,6 +288,9 @@ list_splice_tail_init(struct list_head *list,
 #define list_next_entry(pos, type, member)			\
 	list_entry((pos)->member.next, type, member)
 
+#define list_next_entry_or_null(pos, head, type, member)	\
+	((pos)->next != (head) ? list_first_entry(pos, type, member) : NULL)
+
 #define list_prev_entry(pos, type, member)			\
 	list_entry((pos)->member.prev, type, member)
 

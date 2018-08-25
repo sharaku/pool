@@ -34,7 +34,7 @@
 CPP_SRC(extern "C" {)
 
 // エラー判定しない、空白来ない、マイナス判定あり
-static int
+static inline int
 atoi_fast(const char* str)
 {
 	const char *work = str;
@@ -61,7 +61,7 @@ atoi_fast(const char* str)
 	return result;
 }
 
-static unsigned int
+static inline unsigned int
 atou_fast(const char* str)
 {
 	const char *work = str;
@@ -80,7 +80,7 @@ atou_fast(const char* str)
 
 // エラー判定しない、空白来ない、マイナス判定あり
 // バッファは十分大きい
-static int
+static inline int
 itoa_fast(int i, char* str)
 {
 	char	work[16] = {0};
@@ -116,7 +116,7 @@ itoa_fast(int i, char* str)
 
 // エラー判定しない、空白来ない、マイナス判定あり
 // バッファは十分大きい
-static int
+static inline int
 utoa_fast(unsigned int i, char* str)
 {
 	char	work[16] = {0};

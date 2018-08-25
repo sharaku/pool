@@ -22,22 +22,64 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 **/
 
-#include <timeofday.h>
+#ifndef _VC_TIMEOFDAY_H_
+#define _VC_TIMEOFDAY_H_
 
-// timeofday.h の実態定義
-int64_t	____generictime_usec = 0;
-int64_t	____generictime_msec = 0;
+#ifdef __cplusplus
+	#ifndef CPP_SRC
+		#define CPP_SRC(x) x
+	#endif
+	#if __cplusplus >= 201103L	// >= C++11
+	
+	#else				// < C++11
 
-uint64_t __freq = 0;
+	#endif
+#else
+	#ifndef CPP_SRC
+		#define CPP_SRC(x)
+	#endif
+#endif
 
-__attribute__((constructor))
-static void
-__time_constructor(void)
+#ifndef _WIN32
+#error "not supported."
+#endif
+
+#include <intrin.h>
+#include <windows.h>
+#pragma intrinsic(__rdtsc)
+
+#define	GENERIC_FT2NSEC(FT)	(((int64_t)((FT)->dwHighDateTime) << 32) + (int64_t)((FT)->dwLowDateTime))
+#define	GENERIC_FT2USEC(FT)	(GENERIC_FT2NSEC(FT) / 1000)
+static inline int64_t
+__generic_get_usec(void)
 {
-	uint64_t start, end;
-	start = generic_rdtsc();
-	generic_msleep(10);
-	end = generic_rdtsc();
-	__freq = (end - start) * 100;
-	return;
+	FILETIME ft;
+	GetSystemTimeAsFileTime(&ft);
+	return GENERIC_FT2USEC(&ft);
+
 }
+
+extern uint64_t __freq;
+
+static inline uint64_t
+generic_rdtsc(void)
+{
+	uint64_t counter;
+	counter = __rdtsc();
+	return counter;
+}
+
+// rdtscで取得できた値の1秒の周波数
+static inline uint64_t
+generic_getfreq(void)
+{
+	return __freq;
+}
+
+static inline void
+generic_msleep(uint64_t ms)
+{
+	Sleep(ms);
+}
+
+#endif /* WQ_H_ */

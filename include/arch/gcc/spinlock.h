@@ -1,4 +1,4 @@
-/* --
+﻿/* --
 MIT License
 
 Copyright (c) 2018 Abe Takafumi
@@ -22,22 +22,72 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 **/
 
-#include <timeofday.h>
+#ifndef _GCC_SPINLOCK_H_
+#define _GCC_SPINLOCK_H_
 
-// timeofday.h の実態定義
-int64_t	____generictime_usec = 0;
-int64_t	____generictime_msec = 0;
+#ifdef __cplusplus
+	#ifndef CPP_SRC
+		#define CPP_SRC(x) x
+	#endif
+	#if __cplusplus >= 201103L	// >= C++11
+	
+	#else				// < C++11
 
-uint64_t __freq = 0;
+	#endif
+#else
+	#ifndef CPP_SRC
+		#define CPP_SRC(x)
+	#endif
+#endif
 
-__attribute__((constructor))
-static void
-__time_constructor(void)
+#include <stdint.h>
+CPP_SRC(extern "C" {)
+
+// gccにおけるspinlock
+typedef struct ___spinlock {
+	uint32_t	lock;
+} spinlock_t;
+
+static inline void
+init_spinlock(struct ___spinlock *sl)
 {
-	uint64_t start, end;
-	start = generic_rdtsc();
-	generic_msleep(10);
-	end = generic_rdtsc();
-	__freq = (end - start) * 100;
-	return;
+	sl->lock = 0;
 }
+
+static inline int
+spin_try_lock(struct ___spinlock *sl)
+{
+	// lock変数が0の場合に1へ変更する。
+	int32_t ret = __sync_lock_test_and_set(&sl->lock, 1);
+	if (ret) {
+		// ロック失敗
+		return 1;
+	} else {
+		// ロック成功
+		return 0;
+	}
+}
+
+static inline void
+spin_lock(struct ___spinlock *sl)
+{
+	int32_t ret;
+
+retry:
+	ret = spin_try_lock(sl);
+	if (ret) {
+		goto retry;
+	}
+}
+
+static inline void
+spin_unlock(struct ___spinlock *sl)
+{
+	__sync_lock_release(&sl->lock);
+}
+
+#define SPINLOCK_INIT { 0 }
+
+CPP_SRC(})
+
+#endif // _SPINLOCK_H_

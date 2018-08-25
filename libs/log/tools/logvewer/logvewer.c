@@ -106,7 +106,7 @@ __wq_trace_print(struct wq_trace *trace)
 
 	time_st = localtime(&sec);
 
-	printf("%02d.%02d.%02d-%02d:%02d:%02d.%06d    %s(%d) ",
+	printf("%02d.%02d.%02d-%02d:%02d:%02d.%06d %24s:%-4d ",
 		time_st->tm_year + 1900, time_st->tm_mon + 1, time_st->tm_mday,
 		time_st->tm_hour, time_st->tm_min, time_st->tm_sec, usec,
 		fmtaddr2addr(trace->func), trace->line);
@@ -125,7 +125,6 @@ __wq_infolog_print(void)
 	if (__wq_log->sys_info.head_idx !=  __wq_log->sys_info.tail_idx) {
 		for (idx = __wq_log->sys_info.head_idx; idx < __wq_log->sys_info.tail_idx; idx += blks) {
 			trace = (struct wq_trace*)(base_addr + idx * WQ_SYSINFO_LOG_BASE_SZ);
-			printf("%d:", idx);
 			switch (trace->type) {
 			case WQ_LOGTYPE_TRACE:
 				_log64_32 = (struct wq_log64_32*)trace;
@@ -153,7 +152,6 @@ __wq_infolog_print(void)
 
 	for (idx = 0; idx < __wq_log->sys_info.head_idx; idx += blks) {
 		trace = (struct wq_trace*)(base_addr + idx * WQ_SYSINFO_LOG_BASE_SZ);
-		printf("%d:", idx);
 		switch (trace->type) {
 		case WQ_LOGTYPE_TRACE:
 			_log64_32 = (struct wq_log64_32*)trace;
@@ -182,7 +180,7 @@ __wq_infolog_print(void)
 int
 main(int argc, char *argv[])
 {
-	__init(argv[1], argv[2]);
+	__init(argv[2], argv[1]);
 	__wq_infolog_print();
 	return 0;
 }

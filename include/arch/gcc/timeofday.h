@@ -1,4 +1,4 @@
-﻿/* --
+/* --
 MIT License
 
 Copyright (c) 2018 Abe Takafumi
@@ -22,8 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 **/
 
-#ifndef _ATOMIC_H_
-#define _ATOMIC_H_
+#ifndef _GCC_TIMEOFDAY_H_
+#define _GCC_TIMEOFDAY_H_
 
 #ifdef __cplusplus
 	#ifndef CPP_SRC
@@ -40,18 +40,58 @@ SOFTWARE.
 	#endif
 #endif
 
-CPP_SRC(extern "C" {)
+// 周波数取得は変数代入と同等の速度である。
+// 周波数からus, msへの変換には除算が使用されるが、これはとても遅い。
+// 時刻を気にしないのであれば周波数のまま使用するとよい。
 
-#ifdef __GNUC__
-#include <arch/gcc/atomic.h>
 
-#elif _WIN32
-#include <arch/vc/atomic.h>
+extern uint64_t __freq;
 
+#ifndef __linux__
+#error "not supported."
+#endif
+
+#include <unistd.h>
+#include <stddef.h>
+#include <sys/time.h>
+
+#define	GENERIC_TV2USEC(TV)	((TV)->tv_sec * 1000000 + (TV)->tv_usec)
+static inline int64_t
+__generic_get_usec(void)
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return GENERIC_TV2USEC(&tv);
+
+}
+
+static inline uint64_t
+generic_rdtsc(void)
+{
+	uint64_t  counter;
+#if defined  __x86_64__
+	unsigned hi, lo;
+	__asm__ volatile ("rdtsc" : "=a"(lo), "=d"(hi));
+	counter = ((uint64_t)hi) << 32 | (uint64_t)lo;
+#elif defined __arm__
+	__asm__ volatile ("isb; mrs %0, cntvct_el0" : "=r" (counter));
 #else
 #error "It is an incompatible build environment."
 #endif
+	return counter;
+}
 
-CPP_SRC(})
+// rdtscで取得できた値の1秒の周波数
+static inline uint64_t
+generic_getfreq(void)
+{
+	return __freq;
+}
 
-#endif // _ATOMIC_H_
+static inline void
+generic_msleep(uint64_t ms)
+{
+	usleep(ms * 1000);
+}
+
+#endif /* WQ_H_ */

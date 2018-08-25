@@ -233,8 +233,13 @@ __wq_worker(void *arg)
 				// 10秒後にはタイムアウトするように設定。
 				ms_diff = WQ_DEFAULT_TIMEO_MS;
 			} else {
-				plist_first_entry(&ctx->timer_plist,
-						  wq_item_t, node);
+				wq_item_t *item
+					= plist_first_entry(&ctx->timer_plist,
+							    wq_item_t, node);
+				ms_diff = item->usec - ctx->base_time;
+				if (ms_diff > WQ_DEFAULT_TIMEO_MS) {
+					ms_diff = WQ_DEFAULT_TIMEO_MS;
+				}
 			}
 			read_sequnlock_excl(&ctx->timer_lock);
 
@@ -271,10 +276,10 @@ __push_sched(wq_item_t *item)
 
 	write_seqlock(&ctx->sched_lock);
 	// 2重登録の場合はエラーにする。
-	if (!plist_empty(&(item->node))) {
+	if (!list_empty((struct list_head*)&(item->node))) {
 		write_sequnlock(&ctx->sched_lock);
 		ret = EBUSY;
-		wq_infolog64("EBUSY");
+		wq_infolog64("EBUSY. item=%p", item);
 		goto end;
 	}
 
@@ -310,10 +315,10 @@ __push_timer(wq_item_t *item)
 
 	write_seqlock(&ctx->timer_lock);
 	// 2重登録の場合はエラーにする。
-	if (!plist_empty(&(item->node))) {
+	if (!list_empty((struct list_head*)&(item->node))) {
 		write_sequnlock(&ctx->timer_lock);
 		ret = EBUSY;
-		wq_infolog64("EBUSY");
+		wq_infolog64("EBUSY. item=%p", item);
 		goto end;
 	}
 

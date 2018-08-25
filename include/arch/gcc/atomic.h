@@ -118,9 +118,12 @@ ATOMIC_FETCH_OP(nand, nand, 64)
 #define atomic64_inc(v)		atomic64_add(1, v)
 #define atomic64_dec(v)		atomic64_sub(1, v)
 
-
-
-
+// gccにおけるatomic
+static inline void
+mb(void)
+{
+	__sync_synchronize();
+}
 
 
 #endif // _GCC_ATOMIC_H_

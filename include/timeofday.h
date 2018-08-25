@@ -41,26 +41,10 @@ SOFTWARE.
 #endif
 
 #include <stdint.h>
-#ifdef __linux__
-	#include <stddef.h>
-	#include <sys/time.h>
-	#define	GENERIC_TV2USEC(TV)	((TV)->tv_sec * 1000000 + (TV)->tv_usec)
-	static inline int64_t generic_get_usec_linux(void) {
-		struct timeval tv;
-		gettimeofday(&tv, NULL);
-		return GENERIC_TV2USEC(&tv);
-
-	}
+#ifdef __GNUC__
+#include <arch/gcc/timeofday.h>
 #elif _WIN32
-	#include <windows.h>
-	#define	GENERIC_FT2NSEC(FT)	(((int64_t)((FT)->dwHighDateTime) << 32) + (int64_t)((FT)->dwLowDateTime))
-	#define	GENERIC_FT2USEC(FT)	(GENERIC_FT2NSEC(FT) / 1000)
-	static inline int64_t generic_get_usec_win32(void) {
-		FILETIME ft;
-		GetSystemTimeAsFileTime(&ft);
-		return GENERIC_FT2USEC(&ft);
-
-	}
+#include <arch/vc/timeofday.h>
 #else
 	#error "not supported."
 #endif
@@ -70,31 +54,27 @@ extern int64_t	____generictime_msec;
 
 static void
 generic_upd_generictime(void) {
-#ifdef __linux__
-	____generictime_usec = generic_get_usec_linux();
-#elif _WIN32
-	____generictime_usec = generic_get_usec_win32();
-#endif
+	____generictime_usec = __generic_get_usec();
 	____generictime_msec = ____generictime_usec / 1000;
 }
 
-static int64_t
+static inline int64_t
 generic_get_usec_fast(void) {
 	return ____generictime_usec;
 }
 
-static int64_t
+static inline int64_t
 generic_get_usec(void) {
 	generic_upd_generictime();
 	return generic_get_usec_fast();
 }
 
-static int64_t
+static inline int64_t
 generic_get_msec_fast(void) {
 	return ____generictime_msec;
 }
 
-static int64_t
+static inline int64_t
 generic_get_msec(void) {
 	generic_upd_generictime();
 	return generic_get_msec_fast();

@@ -1,4 +1,4 @@
-﻿/* --
+/* --
 MIT License
 
 Copyright (c) 2018 Abe Takafumi
@@ -22,8 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 **/
 
-#ifndef _ATOMIC_H_
-#define _ATOMIC_H_
+#ifndef _RADIX_TREE_H_
+#define _RADIX_TREE_H_
 
 #ifdef __cplusplus
 	#ifndef CPP_SRC
@@ -42,16 +42,34 @@ SOFTWARE.
 
 CPP_SRC(extern "C" {)
 
-#ifdef __GNUC__
-#include <arch/gcc/atomic.h>
+#define RADIX_TREE_MAP_SHIFT64	(6)
+#define RADIX_TREE_MAP_SIZE64	(1UL << RADIX_TREE_MAP_SHIFT64)
+#define RADIX_TREE_MAP_MASK64	(RADIX_TREE_MAP_SIZE64 - 1)
 
-#elif _WIN32
-#include <arch/vc/atomic.h>
+typedef struct radix_tree_node
+{
+	uint8_t		shift;		// 0x00: Bits remaining in each slot
+	uint8_t		offset;		// 0x01: 親ノードoffset
+	uint8_t		count;		// 0x02: 参照カウント
+	uint8_t		mapsize;	// 0x03: mapのサイズ
+	uint32_t	rsv5;		// 0x04:
+	uint64_t	index;		// 0x08: nodeが管理しているindex
+	struct radix_tree_node *parent;	// 0x10: 親ノードのアドレス
+	struct radix_tree_root *root;		// 0x18: rootノード
+	void		*slots[RADIX_TREE_MAP_SIZE64];	// 0x20: 下位のアドレス
+} radix_tree_node_t;
 
-#else
-#error "It is an incompatible build environment."
-#endif
+typedef struct radix_tree_root
+{
+	radix_tree_node_t	*rnode;		// 0x00: rootノード
+} radix_tree_root_t;
+
+void radix_tree_init(void);
+int radix_tree_insert(struct radix_tree_root *root,unsigned long index, void *entry);
+void * radix_tree_lookup(radix_tree_root_t *rootp, uint64_t index);
+int radix_tree_delete(struct radix_tree_root *rootp, uint64_t index);
+void radix_tree_node_dump(radix_tree_node_t *nodep);
 
 CPP_SRC(})
 
-#endif // _ATOMIC_H_
+#endif

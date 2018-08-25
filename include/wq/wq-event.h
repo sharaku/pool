@@ -57,6 +57,7 @@ CPP_SRC(extern "C" {)
 typedef struct wq_ev_item_linux {
 	int 			id;
 	uint32_t		events;
+	uint32_t		req_events;
 	wq_item_t		item;
 } wq_ev_item_t;
 #define WQ_EVFL_FDIN	(EPOLLIN)

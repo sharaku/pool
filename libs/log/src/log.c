@@ -73,13 +73,12 @@ _wq_log_init(void)
 
 static inline void
 ___wq_trace_internal(struct wq_trace *trc, const char *func,
-		    uint16_t line, int8_t type, int8_t u8)
+		    uint16_t line, int8_t type, uint8_t u8)
 {
 	trc->func = func;
 	trc->usec = (int32_t)(generic_get_usec_fast() - __wq_log->base_usec);
 	trc->line = line;
 	trc->type = type;
-	trc->u8 = u8;
 }
 
 static inline void
@@ -97,7 +96,7 @@ __wq_infolog_internal_idxadd(int idx)
 }
 
 void
-__wq_trace_internal(const char *func, uint16_t line, int8_t arg0)
+__wq_trace_internal(const char *func, uint16_t line)
 {
 	uint32_t idx = 0;
 	struct wq_trace *info = NULL;
@@ -111,7 +110,7 @@ __wq_trace_internal(const char *func, uint16_t line, int8_t arg0)
 	__wq_infolog_internal_idxadd(WQ_LOG_BLKS(struct wq_trace));
 	info = (struct wq_trace*)(__wq_log_sys_info.log_top + idx * WQ_SYSINFO_LOG_BASE_SZ);
 
-	___wq_trace_internal(info, func, line, WQ_LOGTYPE_TRACE, arg0);
+	___wq_trace_internal(info, func, line, WQ_LOGTYPE_TRACE, 0);
 }
 
 void

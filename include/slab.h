@@ -75,6 +75,8 @@ CPP_SRC(extern "C" {)
 
 typedef void (*slab_constructor)(void *buf, size_t sz);
 typedef void (*slab_destructor)(void *buf, size_t sz);
+typedef void *(*slab_mem_alloc)(size_t size);
+typedef void (*slab_mem_free)(void *buf);
 
 struct slab_cache {
 	struct plist_head	s_list;		// 密度ごとのlist
@@ -86,6 +88,8 @@ struct slab_cache {
 	uint64_t		s_buf_cnt;
 	slab_constructor	s_constructor;
 	slab_destructor		s_destructor;
+	slab_mem_alloc		s_mem_alloc;
+	slab_mem_free		s_mem_free;
 };
 
 struct slab_node {
@@ -130,6 +134,8 @@ struct slab_node {
 		(slab)->s_buf_cnt = 0;			\
 		(slab)->s_constructor = NULL;		\
 		(slab)->s_destructor = NULL;		\
+		(slab)->s_mem_alloc = NULL;		\
+		(slab)->s_mem_free = NULL;		\
 	}
 
 #define INIT_SLAB_SZ(slab, size, node_size)	\
@@ -166,6 +172,9 @@ extern int slab_free(void *buf);
 // スラブの参照カウントを加算する。
 extern int slab_get(void *buf);
 
+// スラブの参照カウントを取得する。
+extern int slab_get_refcnt(void *buf);
+
 // スラブから獲得したメモリの参照カウントを減算する。
 extern int slab_put(void *buf);
 
@@ -179,6 +188,14 @@ static inline void
 slab_set_destructor(struct slab_cache *slab, slab_destructor destructor)
 {
 	slab->s_destructor = destructor;
+}
+
+static inline void
+slab_set_mem_allocator(struct slab_cache *slab,
+		       slab_mem_alloc mem_alloc, slab_mem_free mem_free)
+{
+	slab->s_mem_alloc = mem_alloc;
+	slab->s_mem_free = mem_free;
 }
 
 CPP_SRC(})

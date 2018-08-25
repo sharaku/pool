@@ -58,7 +58,6 @@ __wq_ev_poll_generic_linux(void)
 {
 	int i;
 	int nfds;
-	uint32_t events;
 	struct epoll_event ev_ret[WQ_EV_POLL_MAX];
 
 	if (__ev_ctx.cnt) {
@@ -70,6 +69,10 @@ __wq_ev_poll_generic_linux(void)
 			wq_ev_item_t *ev_item = NULL;
 			ev_item = (wq_ev_item_t *)ev_ret[i].data.ptr;
 			ev_item->events = ev_ret[i].events;
+
+			ev_item->req_events = 0;
+			epoll_ctl(__ev_ctx.epfd,
+				       EPOLL_CTL_DEL, ev_item->id, NULL);
 
 			// EPOLLONESHOT指定のため、ここに来る場合は、
 			// 破棄された状態。
@@ -108,7 +111,7 @@ __wq_ev_polltimer_linux(struct wq_item *item, wq_arg_t argv)
 	// 必ず1msごとにイベント発火できるようにタイマーを行う。
 	spin_lock(&(__ev_ctx.lock));
 	if (__ev_ctx.cnt) {
-		wq_timer_sched(item, 1, __wq_ev_polltimer_linux, argv);
+		wq_timer_sched(item, WQ_TIME_US(1000), __wq_ev_polltimer_linux, argv);
 	}
 	spin_unlock(&(__ev_ctx.lock));
 }
@@ -117,22 +120,6 @@ __wq_ev_polltimer_linux(struct wq_item *item, wq_arg_t argv)
 int
 wq_ev_create(wq_ev_item_t *ev_item)
 {
-	int rc;
-	struct epoll_event ev;
-
-	ev.events = 0;
-	ev.data.fd = ev_item->id;
-	ev.data.ptr = (void*)ev_item;
-
-	spin_lock(&(__ev_ctx.epoll_lock));
-	rc = epoll_ctl(__ev_ctx.epfd, EPOLL_CTL_ADD,
-		       ev_item->id, &ev);
-	if (rc != 0) {
-		spin_unlock(&(__ev_ctx.epoll_lock));
-		wq_infolog64("epoll_ctl ADD error. errno=%d", errno);
-		return -errno;
-	}
-	spin_unlock(&(__ev_ctx.epoll_lock));
 	return 0;
 }
 
@@ -154,12 +141,25 @@ wq_ev_sched(wq_ev_item_t *ev_item, int flg, wq_stage_t cb)
 
 	spin_lock(&(__ev_ctx.epoll_lock));
 	ev_item->item.stage = cb;
-	ev_item->events = flg;
-	ev_item->events |= EPOLLONESHOT;
+	if (ev_item->req_events != flg) {
+		epoll_ctl(__ev_ctx.epfd,
+			       EPOLL_CTL_DEL, ev_item->id, NULL);
+	}
+	ev_item->events = 0;
+	ev_item->req_events =flg;
+	ev_item->req_events |= EPOLLONESHOT;
 
-	ev.events = ev_item->events;
+	ev.events = ev_item->req_events;
 	ev.data.fd = ev_item->id;
 	ev.data.ptr = (void*)ev_item;
+
+	rc = epoll_ctl(__ev_ctx.epfd, EPOLL_CTL_ADD,
+		       ev_item->id, &ev);
+	if (rc != 0) {
+		spin_unlock(&(__ev_ctx.epoll_lock));
+		wq_infolog64("epoll_ctl ADD error. errno=%d", errno);
+		return -errno;
+	}
 
 	// 新規にepoll登録する
 	// もし、イベント数が0から1になった場合はIDLE時のイベントと1msごとの
@@ -173,10 +173,12 @@ wq_ev_sched(wq_ev_item_t *ev_item, int flg, wq_stage_t cb)
 	}
 
 	spin_lock(&(__ev_ctx.lock));
-	if (__ev_ctx.cnt == 0) {
+	if (list_empty((struct list_head*)&(__ev_ctx.item.node))) {
 		wq_sched(&(__ev_ctx.item),
 			 __wq_ev_poll_linux, NULL);
-		wq_timer_sched(&(__ev_ctx.item_timer), 1,
+	}
+	if (list_empty((struct list_head*)&(__ev_ctx.item_timer.node))) {
+		wq_timer_sched(&(__ev_ctx.item_timer), WQ_TIME_US(1000),
 			       __wq_ev_polltimer_linux, NULL);
 	}
 	__ev_ctx.cnt++;

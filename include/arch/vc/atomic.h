@@ -21,23 +21,24 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 **/
+#ifndef _VC_ATOMIC_H_
+#define _VC_ATOMIC_H_
 
-#include <timeofday.h>
+#include <stdint.h>
 
-// timeofday.h の実態定義
-int64_t	____generictime_usec = 0;
-int64_t	____generictime_msec = 0;
+typedef struct atomic32 {
+	int32_t		counter;
+} atomic32_t;
+typedef struct atomic64 {
+	int64_t		counter;
+} atomic64_t;
 
-uint64_t __freq = 0;
-
-__attribute__((constructor))
-static void
-__time_constructor(void)
+// vcにおけるatomic
+static inline void
+mb(void)
 {
-	uint64_t start, end;
-	start = generic_rdtsc();
-	generic_msleep(10);
-	end = generic_rdtsc();
-	__freq = (end - start) * 100;
-	return;
+	_ReadWriteBarrier();
 }
+
+
+#endif // _GCC_ATOMIC_H_
