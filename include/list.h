@@ -322,19 +322,19 @@ list_splice_tail_init(struct list_head *list,
 #define list_prepare_entry(pos, head, type, member) \
 	((pos) ? : list_entry(head, type, member))
 
-#define list_for_each_entry_continue(pos, head, member) 	\
-	for (pos = list_next_entry(pos, member);		\
+#define list_for_each_entry_continue(pos, head, type, member) 	\
+	for (pos = list_next_entry(pos, type, member);		\
 	     &pos->member != (head);				\
-	     pos = list_next_entry(pos, member))
+	     pos = list_next_entry(pos, type, member))
 
-#define list_for_each_entry_continue_reverse(pos, head, member)	\
-	for (pos = list_prev_entry(pos, member);		\
+#define list_for_each_entry_continue_reverse(pos, head, type, member) \
+	for (pos = list_prev_entry(pos, type, member);		\
 	     &pos->member != (head);				\
-	     pos = list_prev_entry(pos, member))
+	     pos = list_prev_entry(pos, type, member))
 
-#define list_for_each_entry_from(pos, head, member) 		\
+#define list_for_each_entry_from(pos, head, type, member) 	\
 	for (; &pos->member != (head);				\
-	     pos = list_next_entry(pos, member))
+	     pos = list_next_entry(pos, type, member))
 
 #define list_for_each_entry_safe(pos, n, head, type, member)	\
 	for (pos = list_first_entry(head, type, member),	\
@@ -342,25 +342,90 @@ list_splice_tail_init(struct list_head *list,
 	     &pos->member != (head); 				\
 	     pos = n, n = list_next_entry(n, type, member))
 
-#define list_for_each_entry_safe_continue(pos, n, head, member) \
-	for (pos = list_next_entry(pos, member), 		\
-		n = list_next_entry(pos, member);		\
+#define list_for_each_entry_safe_continue(pos, n, head, type, member) \
+	for (pos = list_next_entry(pos, type, member), 		\
+		n = list_next_entry(pos, type, member);		\
 	     &pos->member != (head);				\
 	     pos = n, n = list_next_entry(n, member))
 
-#define list_for_each_entry_safe_from(pos, n, head, member) 	\
-	for (n = list_next_entry(pos, member);			\
+#define list_for_each_entry_safe_from(pos, n, head, type, member) \
+	for (n = list_next_entry(pos, type, member);		\
 	     &pos->member != (head);				\
-	     pos = n, n = list_next_entry(n, member))
+	     pos = n, n = list_next_entry(n, type, member))
 
-#define list_for_each_entry_safe_reverse(pos, n, head, member)	\
-	for (pos = list_last_entry(head, typeof(*pos), member),	\
-		n = list_prev_entry(pos, member);		\
+#define list_for_each_entry_safe_reverse(pos, n, head, type, member) \
+	for (pos = list_last_entry(head, type, member),		\
+		n = list_prev_entry(pos, type, member);		\
 	     &pos->member != (head); 				\
-	     pos = n, n = list_prev_entry(n, member))
+	     pos = n, n = list_prev_entry(n, type, member))
 
-#define list_safe_reset_next(pos, n, member)			\
-	n = list_next_entry(pos, member)
+#define list_safe_reset_next(pos, n, type, member)		\
+	n = list_next_entry(pos, type, member)
+
+// ハッシュリスト制御
+typedef struct hlist_head {
+	list_head_t *first;
+} hlist_head_t;
+
+#define HLIST_HEAD_INIT { .first = NULL }
+#define HLIST_HEAD(name) hlist_head_t name = {  .first = NULL }
+#define INIT_HLIST_HEAD(ptr) ((ptr)->first = NULL)
+
+static inline int hlist_empty(const hlist_head_t *h)
+{
+	return !(h->first);
+}
+
+// ハッシュの次のエントリを取得する。
+// 最後のノードならNULLを返す。
+#define hlist_next_entry(pos, head, type, member)			\
+	(((pos)->member.next == (head)->first) ? \
+	  NULL : list_entry((pos)->member.next, type, member))
+
+static inline void
+hlist_add_tail(list_head_t *new_, hlist_head_t *head)
+{
+	if (head->first) {
+		list_add_tail(new_, head->first);
+	} else {
+		head->first = new_;
+	}
+}
+
+static inline void
+hlist_del_init(list_head_t *entry, hlist_head_t *head)
+{
+	
+	if (!list_empty(entry)) {
+		// 空でなければ、削除。
+		if (head->first == entry) {
+			head->first = entry->next;
+		}
+		list_del_init(entry);
+	} else {
+		// 空かつhead->firstとどういつならhead->firstはNULLにする。
+		if (head->first == entry) {
+			head->first = NULL;
+		}
+	}
+}
+
+// ハッシュエントリをループする
+#define hlist_for_each_entry(pos, head, type, member)			\
+	for (pos = list_entry((head)->first, type, member);		\
+	     pos;							\
+	     pos = hlist_next_entry(pos, head, type, member))
+
+#define hlist_for_each_entry_from(pos, head, type, member)		\
+	for (;								\
+	     pos;							\
+	     pos = hlist_next_entry(pos, head, type, member))
+
+#define hlist_for_each_entry_safe(pos, n, head, type, member)		\
+	for (pos = list_entry((head)->first, type, member),		\
+	     n = hlist_next_entry(pos, head, type, member);		\
+	     pos;							\
+	     pos = n, n = hlist_next_entry(pos, head, type, member))
 
 CPP_SRC(})
 
