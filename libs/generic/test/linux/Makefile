@@ -9,6 +9,7 @@ TARGET   =libwq.generic-unittest
 SRC      =gtest_list.cpp
 SRC      +=gtest_plist.cpp
 SRC      +=gtest_slab.cpp
+SRC      +=gtest_hashtable.cpp
 
 HEADERS  =
 INCLUDES =-I/usr/local/include/ -I../../../../include/

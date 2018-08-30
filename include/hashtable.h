@@ -35,6 +35,9 @@
 	#ifndef CPP_SRC
 		#define CPP_SRC(x) x
 	#endif
+	#ifndef C_SRC
+		#define C_SRC(x)
+	#endif
 	#if __cplusplus >= 201103L	// >= C++11
 	
 	#else				// < C++11
@@ -43,6 +46,9 @@
 #else
 	#ifndef CPP_SRC
 		#define CPP_SRC(x)
+	#endif
+	#ifndef C_SRC
+		#define C_SRC(x) x
 	#endif
 #endif
 
@@ -58,14 +64,14 @@ typedef struct hash_node
 typedef struct hash_root
 {
 	uint32_t		hash_sz;
-	hlist_head_t		rnode[0];
+	hlist_head_t		rnode[1];
 } hash_root_t;
 
 static inline hash_root_t *
 hash_root_create(uint32_t hash_sz)
 {
 	hash_root_t *rootp;
-	rootp = malloc(sizeof(hash_root_t) + sizeof(hash_node_t*) * hash_sz);
+	rootp = (hash_root_t *)malloc(sizeof(hash_root_t) + sizeof(hash_node_t*) * hash_sz);
 	memset(rootp, 0, sizeof(hash_root_t) + sizeof(hash_node_t*) * hash_sz);
 	rootp->hash_sz = hash_sz;
 	return rootp;
@@ -77,10 +83,20 @@ hash_root_delete(hash_root_t *rootp)
 	free(rootp);
 }
 
+// Linux Kernelで使用されているハッシュ生成値
+#define GOLDEN_RATIO_32 0x61C88647
+
+
+static inline uint32_t
+__hash_32_generic(uint32_t val)
+{
+	return val * GOLDEN_RATIO_32;
+}
+
 static inline uint64_t
 __hash_get_key(hash_root_t *rootp, uint64_t index)
 {
-	uint64_t key = (index >> 32) ^ (index & 0xffffffff);
+	uint64_t key = __hash_32_generic((uint32_t)index ^ __hash_32_generic(index >> 32));
 	key &= rootp->hash_sz - 1;
 	return key;
 }
@@ -88,13 +104,14 @@ __hash_get_key(hash_root_t *rootp, uint64_t index)
 static inline int
 hash_insert(hash_root_t *rootp, uint64_t index, void *entry)
 {
-	hash_node_t *nodep = malloc(sizeof(hash_node_t));
+	hash_node_t *nodep = (hash_node_t *)malloc(sizeof(hash_node_t));
 	init_list_head(&(nodep->list));
 	nodep->index = index;
 	nodep->value = entry;
 
 	uint64_t key = __hash_get_key(rootp, index);
 	hlist_add_tail(&(nodep->list), &rootp->rnode[key]);
+	return 0;
 }
 
 static inline void *
@@ -112,6 +129,7 @@ hash_lookup(hash_root_t *rootp, uint64_t index)
 	} else {
 		return NULL;
 	}
+	return NULL;
 }
 
 static inline void
@@ -135,6 +153,7 @@ hash_delete(hash_root_t *rootp, uint64_t index)
 		if (&rootp->rnode[bkt]) 			\
 			hlist_for_each_entry((obj), &rootp->rnode[bkt], hash_node_t, list)
 
+#if 0
 static inline void
 hash_dump(hash_root_t *rootp)
 {
@@ -145,9 +164,10 @@ hash_dump(hash_root_t *rootp)
 		if (!nodep) {
 			continue;
 		}
-		printf(" index=0x%016lx value=%p\n", nodep->index, nodep->value);
+C_SRC(		printf(" index=0x%016lx value=%p\n", nodep->index, nodep->value);)
 	}
 }
+#endif
 
 CPP_SRC(})
 

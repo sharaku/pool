@@ -46,6 +46,6 @@ if [ -f ${BASE_PATH}libs/generic/Makefile ]; then
 	make -C ${BASE_PATH}libs/log/tools/logvewer/ clean
 
 	# サンプルをクリア
-	make -C ${BASE_PATH}libs/generic/example clean
-	make -C ${BASE_PATH}libs/wq/example clean
+	#make -C ${BASE_PATH}libs/generic/exsample clean
+	#make -C ${BASE_PATH}libs/wq/example clean
 fi

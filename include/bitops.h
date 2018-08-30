@@ -106,12 +106,14 @@ bit_ffs64(const uint64_t bits)
 #ifdef __GNUC__
 	return  __builtin_ffsll(bits);
 #else
-	bits = (bits & 0x5555555555555555) + (bits >> 1 & 0x5555555555555555);
-	bits = (bits & 0x3333333333333333) + (bits >> 2 & 0x3333333333333333);
-	bits = (bits & 0x0f0f0f0f0f0f0f0f) + (bits >> 4 & 0x0f0f0f0f0f0f0f0f);
-	bits = (bits & 0x00ff00ff00ff00ff) + (bits >> 8 & 0x00ff00ff00ff00ff);
-	bits = (bits & 0x0000ffff0000ffff) + (bits >>16 & 0x0000ffff0000ffff);
-	return (bits & 0x00000000ffffffff) + (bits >>16 & 0x00000000ffffffff);
+	uint64_t i = 0;
+
+	if (bits == 0) {
+		return 0;
+	}
+
+	for (i = 1; !(bits & (1 << i)); i++);
+	return i;
 #endif
 }
 int
@@ -125,7 +127,7 @@ bit_popcount64(const uint64_t bits)
 	bits = (bits & 0x0f0f0f0f0f0f0f0f) + (bits >> 4 & 0x0f0f0f0f0f0f0f0f);
 	bits = (bits & 0x00ff00ff00ff00ff) + (bits >> 8 & 0x00ff00ff00ff00ff);
 	bits = (bits & 0x0000ffff0000ffff) + (bits >>16 & 0x0000ffff0000ffff);
-	return (bits & 0x00000000ffffffff) + (bits >>16 & 0x00000000ffffffff);
+	return (bits & 0x00000000ffffffff) + (bits >>32 & 0x00000000ffffffff);
 #endif
 }
 
