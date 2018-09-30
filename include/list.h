@@ -378,7 +378,9 @@ static inline int hlist_empty(const hlist_head_t *h)
 
 // ハッシュの次のエントリを取得する。
 // 最後のノードならNULLを返す。
-#define hlist_next_entry(pos, head, type, member)			\
+#define hlist_first_entry_or_null(pos, head, type, member)	\
+	((hlist_empty(head)) ? NULL : list_entry((head)->first, type, member))
+#define hlist_next_entry_or_null(pos, head, type, member)	\
 	(((pos)->member.next == (head)->first) ? \
 	  NULL : list_entry((pos)->member.next, type, member))
 
@@ -414,18 +416,18 @@ hlist_del_init(list_head_t *entry, hlist_head_t *head)
 #define hlist_for_each_entry(pos, head, type, member)			\
 	for (pos = list_entry((head)->first, type, member);		\
 	     pos;							\
-	     pos = hlist_next_entry(pos, head, type, member))
+	     pos = hlist_next_entry_or_null(pos, head, type, member))
 
 #define hlist_for_each_entry_from(pos, head, type, member)		\
 	for (;								\
 	     pos;							\
-	     pos = hlist_next_entry(pos, head, type, member))
+	     pos = hlist_next_entry_or_null(pos, head, type, member))
 
 #define hlist_for_each_entry_safe(pos, n, head, type, member)		\
 	for (pos = list_entry((head)->first, type, member),		\
-	     n = hlist_next_entry(pos, head, type, member);		\
+	     n = (pos) ? hlist_next_entry_or_null(pos, head, type, member) : NULL; \
 	     pos;							\
-	     pos = n, n = hlist_next_entry(pos, head, type, member))
+	     pos = n, n = (pos) ? hlist_next_entry_or_null(pos, head, type, member) : NULL)
 
 CPP_SRC(})
 
