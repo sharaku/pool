@@ -166,7 +166,7 @@ __slab_free(void *buf)
 	return 0;
 }
 
-static inline void
+static inline int
 __slab_node_alloc(struct slab_cache *slab)
 {
 	struct slab_node *node;
@@ -179,7 +179,7 @@ __slab_node_alloc(struct slab_cache *slab)
 	if (slab->s_mem_alloc) {
 		node = (struct slab_node *)slab->s_mem_alloc(slab->s_node_size);
 	} else {
-		node = (struct slab_node *)malloc(slab->s_node_size);
+		return -ENOMEM;
 	}
 
 	init_plist_node(&node->sn_plist, 0);
@@ -204,17 +204,19 @@ __slab_node_alloc(struct slab_cache *slab)
 	__slab_resched(slab, node);
 
 	slab->s_node_cnt++;
+	return 0;
 }
 
 // slab獲得の優先度キューの再登録を行う。
-static inline void
+static inline int
 __slab_node_free(struct slab_cache *slab, struct slab_node *node)
 {
 	plist_del(&node->sn_plist, &slab->s_list);
 	if (slab->s_mem_free) {
 		slab->s_mem_free(node);
+		return 0;
 	} else {
-		free(node);
+		return -EINVAL;
 	}
 }
 
@@ -235,7 +237,9 @@ _slab_alloc(struct slab_cache *slab,
 	}
 
 	if (plist_empty(&slab->s_list)) {
-		__slab_node_alloc(slab);
+		if (__slab_node_alloc(slab)) {
+			return (void*)-ENOMEM;
+		}
 	}
 
 	node = list_entry(slab->s_list.node_list.next,
@@ -292,7 +296,9 @@ slab_free(void *buf)
 	if (!node->sn_alloc_cnt) {
 		// カウンタが0であれば、すべて開放済み。
 		// よってnodeを破棄する。
-		__slab_node_free(node->sn_slab, node);
+		if (__slab_node_free(node->sn_slab, node)) {
+			return -EFAULT;
+		}
 	} else {
 		// もしslabの獲得により優先度に変化が発生した時は、
 		// nodeを入れなおす。
@@ -381,28 +387,3 @@ slab_put(void *buf)
 	}
 	return h->h_refcnt;
 }
-
-struct slab_cache*
-slab_create(size_t size, size_t node_size, uint32_t max_cnt)
-{
-	struct slab_cache *slab;
-
-	if (node_size < SLAB_NODE_SZ_MIN) {
-		return NULL;
-	}
-
-	slab = (struct slab_cache *)malloc(sizeof(struct slab_cache));
-	INIT_SLAB(slab, size, node_size, max_cnt);
-	return slab;
-}
-
-int
-slab_destroy(struct slab_cache *slab)
-{
-	if (slab->s_node_cnt) {
-		return -EBUSY;
-	}
-	free(slab);
-	return 0;
-}
-

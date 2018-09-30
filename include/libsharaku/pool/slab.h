@@ -39,6 +39,24 @@
 
 #include <libsharaku/container/plist.h>
 
+#ifndef MEMORY_ALLOC
+#ifdef __malloc_and_calloc_defined
+#define MEMORY_ALLOC	malloc
+#else // __malloc_and_calloc_defined
+#warning "malloc and calloc not defined"
+#define MEMORY_ALLOC	NULL
+#endif // __malloc_and_calloc_defined
+#endif // MEMORY_ALLOC
+
+#ifndef MEMORY_FREE
+#ifdef __malloc_and_calloc_defined
+#define MEMORY_FREE	free
+#else // __malloc_and_calloc_defined
+#warning "malloc and calloc not defined"
+#define MEMORY_FREE	NULL
+#endif // __malloc_and_calloc_defined
+#endif // MEMORY_FREE
+
 CPP_SRC(extern "C" {)
 
 // SLABを使用してメモリを確保する。
@@ -108,7 +126,11 @@ struct slab_node {
 		size,					\
 		node_size,				\
 		max_cnt,				\
-		0					\
+		0,					\
+		NULL,					\
+		NULL,					\
+		MEMORY_ALLOC,				\
+		MEMORY_FREE				\
 	}
 
 #define SLAB_INIT_SZ(slab, size, node_size)	\
@@ -129,8 +151,8 @@ struct slab_node {
 		(slab)->s_buf_cnt = 0;			\
 		(slab)->s_constructor = NULL;		\
 		(slab)->s_destructor = NULL;		\
-		(slab)->s_mem_alloc = NULL;		\
-		(slab)->s_mem_free = NULL;		\
+		(slab)->s_mem_alloc = MEMORY_ALLOC;	\
+		(slab)->s_mem_free = MEMORY_FREE;	\
 	}
 
 #define INIT_SLAB_SZ(slab, size, node_size)	\
@@ -138,23 +160,6 @@ struct slab_node {
 
 #define INIT_SLAB_DEF(slab, size)	\
 	INIT_SLAB(slab, size, SLAB_DEFAULT_SZ, 0)
-
-// スラブを動的に作成する。
-extern struct slab_cache* slab_create(size_t size,
-					size_t node_size, uint32_t max_cnt);
-static inline struct slab_cache*
-slab_create_sz(size_t size, size_t node_size)
-{
-	return slab_create(size, node_size, 0);
-}
-static inline struct slab_cache*
-slab_create_def(size_t size)
-{
-	return slab_create(size, SLAB_DEFAULT_SZ, 0);
-}
-
-// 動的に作成したスラブを破棄する。
-extern int slab_destroy(struct slab_cache *slab);
 
 // スラブからメモリを獲得する。
 extern void* _slab_alloc(struct slab_cache *slab,

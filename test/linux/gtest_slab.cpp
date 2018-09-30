@@ -24,222 +24,153 @@
  *
  */
 
+#include <stdlib.h>
 #include <libsharaku/pool/slab.h>
 #include <gtest/gtest.h>
+#include <errno.h>
 
 TEST(slab, SLAB_INIT) {
 	struct slab_cache slab = SLAB_INIT(slab, sizeof(int), 1048576, 101);
 
-	EXPECT_EQ(slab.s_list.node_list.next, &slab.s_list.node_list);
-	EXPECT_EQ(slab.s_list.node_list.prev, &slab.s_list.node_list);
-	EXPECT_EQ(slab.s_flist.node_list.next, &slab.s_flist.node_list);
-	EXPECT_EQ(slab.s_flist.node_list.prev, &slab.s_flist.node_list);
-	EXPECT_EQ(slab.s_node_cnt, 0);
-	EXPECT_EQ(slab.s_size, sizeof(int));
-	EXPECT_EQ(slab.s_node_size, 1048576);
-	EXPECT_EQ(slab.s_max_buf_cnt, 101);
-	EXPECT_EQ(slab.s_buf_cnt, 0);
+	ASSERT_EQ(slab.s_list.node_list.next, &slab.s_list.node_list);
+	ASSERT_EQ(slab.s_list.node_list.prev, &slab.s_list.node_list);
+	ASSERT_EQ(slab.s_flist.node_list.next, &slab.s_flist.node_list);
+	ASSERT_EQ(slab.s_flist.node_list.prev, &slab.s_flist.node_list);
+	ASSERT_EQ(slab.s_node_cnt, 0);
+	ASSERT_EQ(slab.s_size, sizeof(int));
+	ASSERT_EQ(slab.s_node_size, 1048576);
+	ASSERT_EQ(slab.s_max_buf_cnt, 101);
+	ASSERT_EQ(slab.s_buf_cnt, 0);
 }
 
 TEST(slab, SLAB_INIT_SZ) {
 	struct slab_cache slab = SLAB_INIT_SZ(slab, sizeof(int), 1048576);
 
-	EXPECT_EQ(slab.s_list.node_list.next, &slab.s_list.node_list);
-	EXPECT_EQ(slab.s_list.node_list.prev, &slab.s_list.node_list);
-	EXPECT_EQ(slab.s_flist.node_list.next, &slab.s_flist.node_list);
-	EXPECT_EQ(slab.s_flist.node_list.prev, &slab.s_flist.node_list);
-	EXPECT_EQ(slab.s_node_cnt, 0);
-	EXPECT_EQ(slab.s_size, sizeof(int));
-	EXPECT_EQ(slab.s_node_size, 1048576);
-	EXPECT_EQ(slab.s_max_buf_cnt, 0);
-	EXPECT_EQ(slab.s_buf_cnt, 0);
+	ASSERT_EQ(slab.s_list.node_list.next, &slab.s_list.node_list);
+	ASSERT_EQ(slab.s_list.node_list.prev, &slab.s_list.node_list);
+	ASSERT_EQ(slab.s_flist.node_list.next, &slab.s_flist.node_list);
+	ASSERT_EQ(slab.s_flist.node_list.prev, &slab.s_flist.node_list);
+	ASSERT_EQ(slab.s_node_cnt, 0);
+	ASSERT_EQ(slab.s_size, sizeof(int));
+	ASSERT_EQ(slab.s_node_size, 1048576);
+	ASSERT_EQ(slab.s_max_buf_cnt, 0);
+	ASSERT_EQ(slab.s_buf_cnt, 0);
 }
 
 TEST(slab, SLAB_INIT_DEF) {
 	struct slab_cache slab = SLAB_INIT_DEF(slab, sizeof(int));
 
-	EXPECT_EQ(slab.s_list.node_list.next, &slab.s_list.node_list);
-	EXPECT_EQ(slab.s_list.node_list.prev, &slab.s_list.node_list);
-	EXPECT_EQ(slab.s_flist.node_list.next, &slab.s_flist.node_list);
-	EXPECT_EQ(slab.s_flist.node_list.prev, &slab.s_flist.node_list);
-	EXPECT_EQ(slab.s_node_cnt, 0);
-	EXPECT_EQ(slab.s_size, sizeof(int));
-	EXPECT_EQ(slab.s_node_size, 1048576);
-	EXPECT_EQ(slab.s_max_buf_cnt, 0);
-	EXPECT_EQ(slab.s_buf_cnt, 0);
+	ASSERT_EQ(slab.s_list.node_list.next, &slab.s_list.node_list);
+	ASSERT_EQ(slab.s_list.node_list.prev, &slab.s_list.node_list);
+	ASSERT_EQ(slab.s_flist.node_list.next, &slab.s_flist.node_list);
+	ASSERT_EQ(slab.s_flist.node_list.prev, &slab.s_flist.node_list);
+	ASSERT_EQ(slab.s_node_cnt, 0);
+	ASSERT_EQ(slab.s_size, sizeof(int));
+	ASSERT_EQ(slab.s_node_size, 1048576);
+	ASSERT_EQ(slab.s_max_buf_cnt, 0);
+	ASSERT_EQ(slab.s_buf_cnt, 0);
 }
 
 TEST(slab, INIT_SLAB) {
 	struct slab_cache slab;
 	INIT_SLAB(&slab, sizeof(int), 1048576, 101);
 
-	EXPECT_EQ(slab.s_list.node_list.next, &slab.s_list.node_list);
-	EXPECT_EQ(slab.s_list.node_list.prev, &slab.s_list.node_list);
-	EXPECT_EQ(slab.s_flist.node_list.next, &slab.s_flist.node_list);
-	EXPECT_EQ(slab.s_flist.node_list.prev, &slab.s_flist.node_list);
-	EXPECT_EQ(slab.s_node_cnt, 0);
-	EXPECT_EQ(slab.s_size, sizeof(int));
-	EXPECT_EQ(slab.s_node_size, 1048576);
-	EXPECT_EQ(slab.s_max_buf_cnt, 101);
-	EXPECT_EQ(slab.s_buf_cnt, 0);
+	ASSERT_EQ(slab.s_list.node_list.next, &slab.s_list.node_list);
+	ASSERT_EQ(slab.s_list.node_list.prev, &slab.s_list.node_list);
+	ASSERT_EQ(slab.s_flist.node_list.next, &slab.s_flist.node_list);
+	ASSERT_EQ(slab.s_flist.node_list.prev, &slab.s_flist.node_list);
+	ASSERT_EQ(slab.s_node_cnt, 0);
+	ASSERT_EQ(slab.s_size, sizeof(int));
+	ASSERT_EQ(slab.s_node_size, 1048576);
+	ASSERT_EQ(slab.s_max_buf_cnt, 101);
+	ASSERT_EQ(slab.s_buf_cnt, 0);
 }
 
 TEST(slab, INIT_SLAB_SZ) {
 	struct slab_cache slab;
 	INIT_SLAB_SZ(&slab, sizeof(int), 1048576);
 
-	EXPECT_EQ(slab.s_list.node_list.next, &slab.s_list.node_list);
-	EXPECT_EQ(slab.s_list.node_list.prev, &slab.s_list.node_list);
-	EXPECT_EQ(slab.s_flist.node_list.next, &slab.s_flist.node_list);
-	EXPECT_EQ(slab.s_flist.node_list.prev, &slab.s_flist.node_list);
-	EXPECT_EQ(slab.s_node_cnt, 0);
-	EXPECT_EQ(slab.s_size, sizeof(int));
-	EXPECT_EQ(slab.s_node_size, 1048576);
-	EXPECT_EQ(slab.s_max_buf_cnt, 0);
-	EXPECT_EQ(slab.s_buf_cnt, 0);
+	ASSERT_EQ(slab.s_list.node_list.next, &slab.s_list.node_list);
+	ASSERT_EQ(slab.s_list.node_list.prev, &slab.s_list.node_list);
+	ASSERT_EQ(slab.s_flist.node_list.next, &slab.s_flist.node_list);
+	ASSERT_EQ(slab.s_flist.node_list.prev, &slab.s_flist.node_list);
+	ASSERT_EQ(slab.s_node_cnt, 0);
+	ASSERT_EQ(slab.s_size, sizeof(int));
+	ASSERT_EQ(slab.s_node_size, 1048576);
+	ASSERT_EQ(slab.s_max_buf_cnt, 0);
+	ASSERT_EQ(slab.s_buf_cnt, 0);
 }
 
 TEST(slab, INIT_SLAB_DEF) {
 	struct slab_cache slab;
 	INIT_SLAB_DEF(&slab, sizeof(int));
 
-	EXPECT_EQ(slab.s_list.node_list.next, &slab.s_list.node_list);
-	EXPECT_EQ(slab.s_list.node_list.prev, &slab.s_list.node_list);
-	EXPECT_EQ(slab.s_flist.node_list.next, &slab.s_flist.node_list);
-	EXPECT_EQ(slab.s_flist.node_list.prev, &slab.s_flist.node_list);
-	EXPECT_EQ(slab.s_node_cnt, 0);
-	EXPECT_EQ(slab.s_size, sizeof(int));
-	EXPECT_EQ(slab.s_node_size, 1048576);
-	EXPECT_EQ(slab.s_max_buf_cnt, 0);
-	EXPECT_EQ(slab.s_buf_cnt, 0);
-}
-
-TEST(slab, slab_create) {
-	struct slab_cache *slab;
-	slab = slab_create(sizeof(int), 1048576, 101);
-
-	EXPECT_EQ(slab->s_list.node_list.next, &slab->s_list.node_list);
-	EXPECT_EQ(slab->s_list.node_list.prev, &slab->s_list.node_list);
-	EXPECT_EQ(slab->s_flist.node_list.next, &slab->s_flist.node_list);
-	EXPECT_EQ(slab->s_flist.node_list.prev, &slab->s_flist.node_list);
-	EXPECT_EQ(slab->s_node_cnt, 0);
-	EXPECT_EQ(slab->s_size, sizeof(int));
-	EXPECT_EQ(slab->s_node_size, 1048576);
-	EXPECT_EQ(slab->s_max_buf_cnt, 101);
-	EXPECT_EQ(slab->s_buf_cnt, 0);
-
-	slab_destroy(slab);
-}
-
-TEST(slab, slab_create_sz) {
-	struct slab_cache *slab;
-	slab = slab_create_sz(sizeof(int), 1048576);
-
-	EXPECT_EQ(slab->s_list.node_list.next, &slab->s_list.node_list);
-	EXPECT_EQ(slab->s_list.node_list.prev, &slab->s_list.node_list);
-	EXPECT_EQ(slab->s_flist.node_list.next, &slab->s_flist.node_list);
-	EXPECT_EQ(slab->s_flist.node_list.prev, &slab->s_flist.node_list);
-	EXPECT_EQ(slab->s_node_cnt, 0);
-	EXPECT_EQ(slab->s_size, sizeof(int));
-	EXPECT_EQ(slab->s_node_size, 1048576);
-	EXPECT_EQ(slab->s_max_buf_cnt, 0);
-	EXPECT_EQ(slab->s_buf_cnt, 0);
-
-	slab_destroy(slab);
-}
-
-TEST(slab, slab_create_def) {
-	struct slab_cache *slab;
-	slab = slab_create_def(sizeof(int));
-
-	EXPECT_EQ(slab->s_list.node_list.next, &slab->s_list.node_list);
-	EXPECT_EQ(slab->s_list.node_list.prev, &slab->s_list.node_list);
-	EXPECT_EQ(slab->s_flist.node_list.next, &slab->s_flist.node_list);
-	EXPECT_EQ(slab->s_flist.node_list.prev, &slab->s_flist.node_list);
-	EXPECT_EQ(slab->s_node_cnt, 0);
-	EXPECT_EQ(slab->s_size, sizeof(int));
-	EXPECT_EQ(slab->s_node_size, 1048576);
-	EXPECT_EQ(slab->s_max_buf_cnt, 0);
-	EXPECT_EQ(slab->s_buf_cnt, 0);
-
-	slab_destroy(slab);
-}
-
-TEST(slab, slab_destroy) {
-	struct slab_cache *slab;
-	slab = slab_create(sizeof(int), 1048576, 101);
-
-	EXPECT_EQ(slab->s_list.node_list.next, &slab->s_list.node_list);
-	EXPECT_EQ(slab->s_list.node_list.prev, &slab->s_list.node_list);
-	EXPECT_EQ(slab->s_flist.node_list.next, &slab->s_flist.node_list);
-	EXPECT_EQ(slab->s_flist.node_list.prev, &slab->s_flist.node_list);
-	EXPECT_EQ(slab->s_node_cnt, 0);
-	EXPECT_EQ(slab->s_size, sizeof(int));
-	EXPECT_EQ(slab->s_node_size, 1048576);
-	EXPECT_EQ(slab->s_max_buf_cnt, 101);
-	EXPECT_EQ(slab->s_buf_cnt, 0);
-
-	slab_destroy(slab);
+	ASSERT_EQ(slab.s_list.node_list.next, &slab.s_list.node_list);
+	ASSERT_EQ(slab.s_list.node_list.prev, &slab.s_list.node_list);
+	ASSERT_EQ(slab.s_flist.node_list.next, &slab.s_flist.node_list);
+	ASSERT_EQ(slab.s_flist.node_list.prev, &slab.s_flist.node_list);
+	ASSERT_EQ(slab.s_node_cnt, 0);
+	ASSERT_EQ(slab.s_size, sizeof(int));
+	ASSERT_EQ(slab.s_node_size, 1048576);
+	ASSERT_EQ(slab.s_max_buf_cnt, 0);
+	ASSERT_EQ(slab.s_buf_cnt, 0);
 }
 
 TEST(slab, _slab_alloc) {
-	struct slab_cache *slab;
+	struct slab_cache slab;
 	char *slab_bufer[1024];
 	int i;
 	int rc;
 
-	slab = slab_create(256, 1048576, 128);
+	INIT_SLAB(&slab, 256, 1048576, 128);
 	for (i = 0; i < 128; i++) {
-		slab_bufer[i] = (char*)_slab_alloc(slab, __FILE__, __LINE__);
+		slab_bufer[i] = (char*)_slab_alloc(&slab, __FILE__, __LINE__);
+		ASSERT_NE((int64_t)slab_bufer[i], -ENOMEM);
 	}
 	for (i = 128; i < 256; i++) {
-		slab_bufer[i] = (char*)_slab_alloc(slab, __FILE__, __LINE__);
+		slab_bufer[i] = (char*)_slab_alloc(&slab, __FILE__, __LINE__);
 	}
 
 	for (i = 0; i < 128; i++) {
 		rc = slab_free(slab_bufer[i]);
-		EXPECT_EQ(rc, 0);
+		ASSERT_EQ(rc, 0);
 	}
-
-	slab_destroy(slab);
 }
 
 TEST(slab, slab_free) {
-	struct slab_cache *slab;
+	struct slab_cache slab;
 	char *slab_bufer[1024];
 	int i;
 	int rc;
 
-	slab = slab_create(256, 1048576, 128);
+	INIT_SLAB(&slab, 256, 1048576, 128);
 	for (i = 0; i < 128; i++) {
-		slab_bufer[i] = (char*)_slab_alloc(slab, __FILE__, __LINE__);
+		slab_bufer[i] = (char*)_slab_alloc(&slab, __FILE__, __LINE__);
+		ASSERT_NE((int64_t)slab_bufer[i], -ENOMEM);
 	}
 
 	for (i = 0; i < 128; i++) {
 		rc = slab_free(slab_bufer[i]);
-		EXPECT_EQ(rc, 0);
+		ASSERT_EQ(rc, 0);
 	}
-
-	slab_destroy(slab);
 }
 
 TEST(slab, slab_alloc) {
-	struct slab_cache *slab;
+	struct slab_cache slab;
 	char *slab_bufer[1024];
 	int i;
 	int rc;
 
-	slab = slab_create(256, 1048576, 128);
+	INIT_SLAB(&slab, 256, 1048576, 128);
 	for (i = 0; i < 128; i++) {
-		slab_bufer[i] = (char*)slab_alloc(slab);
+		slab_bufer[i] = (char*)slab_alloc(&slab);
+		ASSERT_NE((int64_t)slab_bufer[i], -ENOMEM);
 	}
 
 	for (i = 0; i < 128; i++) {
 		rc = slab_free(slab_bufer[i]);
 		EXPECT_EQ(rc, 0);
 	}
-
-	slab_destroy(slab);
 }
 
 TEST(slab, slab_set_constructor) {
