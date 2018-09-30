@@ -26,8 +26,8 @@
 
 #include <stdlib.h>
 #include <errno.h>
-#include <slab.h>
-#include <atomic.h>
+#include <libsharaku/pool/slab.h>
+#include <libsharaku/atomic/atomic.h>
 
 #define _SLAB_MAGIC	0xF324ABE3
 // メモリバッファのヘッダ。

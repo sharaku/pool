@@ -31,18 +31,13 @@
 	#ifndef CPP_SRC
 		#define CPP_SRC(x) x
 	#endif
-	#if __cplusplus >= 201103L	// >= C++11
-	
-	#else				// < C++11
-
-	#endif
 #else
 	#ifndef CPP_SRC
 		#define CPP_SRC(x)
 	#endif
 #endif
 
-#include <plist.h>
+#include <libsharaku/container/plist.h>
 
 CPP_SRC(extern "C" {)
 

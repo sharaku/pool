@@ -37,9 +37,13 @@ if(NOT CMAKE_TOOLCHAIN_FILE)
 	endif()
 endif(NOT CMAKE_TOOLCHAIN_FILE)
 
-include_directories(../../include)
+include_directories(
+	include
+	../atomic/include
+	../container/include
+	)
 
-
+# ---------------------------------------------------------------
 # コンパイラ引数
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CROSS_FLAGS_C}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CROSS_FLAGS_CXX}")
@@ -52,12 +56,31 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${CROSS_FLAGS_CXX} -O2")
 set(CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL} ${CROSS_FLAGS_C} -O3")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} ${CROSS_FLAGS_CXX} -O3")
 
-# ソース定義
+# ---------------------------------------------------------------
+# libs
 set(MODULE_SYSTEM
-	"src/wq.c"
-	"src/wq-event.c"
+	src/slab.c
 	)
-add_library(wq.wq.${TARGET_SUFFIX} STATIC
+add_library(sharaku.pool.${TARGET_SUFFIX} STATIC
 	${MODULE_SYSTEM}
 	)
+
+
+# ---------------------------------------------------------------
+# testing
+add_executable(sharaku.pool.test 
+	test/linux/gtest_slab.cpp
+	)
+target_link_libraries(sharaku.pool.test
+	sharaku.pool.${TARGET_SUFFIX}
+	gtest_main
+	gtest
+	pthread
+	)
+
+# ---------------------------------------------------------------
+# exsample
+
+# ---------------------------------------------------------------
+# tools
 

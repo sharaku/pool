@@ -24,7 +24,7 @@
  *
  */
 
-#include <slab.h>
+#include <libsharaku/pool/slab.h>
 #include <gtest/gtest.h>
 
 TEST(slab, SLAB_INIT) {
